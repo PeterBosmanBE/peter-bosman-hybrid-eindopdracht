@@ -1,0 +1,49 @@
+@import url("https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+
+.font-serif {
+  font-family: "Merriweather", Georgia, serif;
+}
+.font-sans {
+  font-family: "Source Sans 3", sans-serif;
+}
+
+.book-card {
+  transition: all 0.3s ease;
+}
+.book-card:hover {
+  transform: translateY(-8px);
+}
+.book-card:hover .book-shadow {
+  transform: translateY(8px);
+  opacity: 0.15;
+}
+
+.book-shadow {
+  transition: all 0.3s ease;
+}
+
+.nav-item {
+  position: relative;
+}
+.nav-item::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #f7941d;
+  transition: width 0.3s ease;
+}
+.nav-item:hover::after,
+.nav-item.active::after {
+  width: 100%;
+}
+
+.progress-bar {
+  background: linear-gradient(
+    90deg,
+    #f7941d var(--progress),
+    #e8e8e8 var(--progress)
+  );
+}
