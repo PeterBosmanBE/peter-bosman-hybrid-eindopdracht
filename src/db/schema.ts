@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, date } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -71,6 +71,64 @@ export const verification = pgTable(
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+export const audiobooks = pgTable(
+  "audiobooks",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    author: text("author").notNull(),
+    narrator: text("narrator"),
+    duration: text("duration").notNull(),
+    cover: text("cover").notNull(),
+    description: text("description").notNull(),
+    releaseDate: date("release_date").notNull(),
+    language: text("language").notNull(),
+    publisher: text("publisher").notNull(),
+    category: text("category").notNull(),
+  },
+  (table) => [index("audiobooks_title_idx").on(table.title)]
+);
+
+export const audiobookChapters = pgTable(
+  "audiobook_chapters",
+  {
+    id: text("id").primaryKey(),
+    audiobookId: text("audiobook_id").references(() => audiobooks.id).notNull(),
+    title: text("title").notNull(),
+    duration: text("duration").notNull(),
+  },
+  (table) => [index("audiobook_chapters_audiobook_id_idx").on(table.audiobookId)]
+);
+
+export const podcasts = pgTable(
+  "podcasts",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    author: text("author").notNull(),
+    duration: text("duration").notNull(),
+    cover: text("cover").notNull(),
+    description: text("description").notNull(),
+    releaseDate: date("release_date").notNull(),
+    language: text("language").notNull(),
+    publisher: text("publisher").notNull(),
+    category: text("category").notNull(),
+  },
+  (table) => [index("podcasts_title_idx").on(table.title)]
+);
+
+export const podcastEpisodes = pgTable(
+  "podcast_episodes",
+  {
+    id: text("id").primaryKey(),
+    podcastId: text("podcast_id").references(() => podcasts.id).notNull(),
+    title: text("title").notNull(),
+    duration: text("duration").notNull(),
+    date: date("date").notNull(),
+  },
+  (table) => [index("podcast_episodes_podcast_id_idx").on(table.podcastId)]
 );
 
 export const userRelations = relations(user, ({ many }) => ({
