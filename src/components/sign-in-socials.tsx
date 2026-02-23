@@ -7,9 +7,10 @@ type SignInOptions = {
   name: string;
   icon: "github";
   provider: "github";
+  turnstileToken: string | null;
 };
 
-export default function SignInSocials({ name, icon, provider }: SignInOptions) {
+export default function SignInSocials({ name, icon, provider, turnstileToken }: SignInOptions) {
   return (
     <>
       <Button
@@ -18,6 +19,11 @@ export default function SignInSocials({ name, icon, provider }: SignInOptions) {
         onClick={() =>
           authClient.signIn.social({
             provider: provider,
+            fetchOptions: {
+              headers: {
+                "x-captcha-response": turnstileToken!,
+              },
+            },
           })
         }
       >
