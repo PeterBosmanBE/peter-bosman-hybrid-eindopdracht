@@ -5,8 +5,8 @@ import { Icon } from "./ui/icons";
 
 type SignInOptions = {
   name: string;
-  icon: "github";
-  provider: "github";
+  icon: "discord" | "github";
+  provider: "discord" | "github";
   turnstileToken: string | null;
 };
 

@@ -18,6 +18,7 @@ export default function SocialLogin() {
       <section className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:w-1/2">
         <div className="gap-3">
           <SignInSocials name={"GitHub"} provider="github" icon="github" turnstileToken={turnstileToken} />
+          <SignInSocials name={"Discord"} provider="discord" icon="discord" turnstileToken={turnstileToken} />
         </div>
         <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} onSuccess={setTurnstileToken} />
       </section>
