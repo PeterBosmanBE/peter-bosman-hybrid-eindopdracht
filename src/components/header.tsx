@@ -1,6 +1,8 @@
+"use client";
 import Link from "next/link";
 import AvatarDropdown from "./avatar-dropdown";
 import { useState } from "react";
+import Logo from "./ui/logo";
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,26 +19,7 @@ export default function Header() {
           {/* Top Bar */}
           <div className="flex items-center justify-between px-6 py-4">
             {/* Logo */}
-            <Link href="/home" className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ background: "#F7941D" }}
-              >
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
-                </svg>
-              </div>
-              <span
-                className="font-serif text-2xl font-bold"
-                style={{ color: "#232F3E" }}
-              >
-                Chapter
-              </span>
-            </Link>
+            <Logo isMainHeader={true} />
 
             {/* Search */}
             <div className="flex-1 max-w-xl mx-8 hidden md:block">
