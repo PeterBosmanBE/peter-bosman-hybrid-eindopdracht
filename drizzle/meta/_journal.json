@@ -15,6 +15,13 @@
       "when": 1771872632544,
       "tag": "0001_lethal_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773872397982,
+      "tag": "0002_right_purifiers",
+      "breakpoints": true
     }
   ]
 }

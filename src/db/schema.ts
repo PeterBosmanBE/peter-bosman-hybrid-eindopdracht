@@ -77,6 +77,9 @@ export const audiobooks = pgTable(
   "audiobooks",
   {
     id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     author: text("author").notNull(),
     narrator: text("narrator"),
@@ -88,7 +91,10 @@ export const audiobooks = pgTable(
     publisher: text("publisher").notNull(),
     category: text("category").notNull(),
   },
-  (table) => [index("audiobooks_title_idx").on(table.title)]
+  (table) => [
+    index("audiobooks_title_idx").on(table.title),
+    index("audiobooks_user_id_idx").on(table.userId),
+  ]
 );
 
 export const audiobookChapters = pgTable(
@@ -106,6 +112,9 @@ export const podcasts = pgTable(
   "podcasts",
   {
     id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     author: text("author").notNull(),
     duration: text("duration").notNull(),
@@ -116,7 +125,10 @@ export const podcasts = pgTable(
     publisher: text("publisher").notNull(),
     category: text("category").notNull(),
   },
-  (table) => [index("podcasts_title_idx").on(table.title)]
+  (table) => [
+    index("podcasts_title_idx").on(table.title),
+    index("podcasts_user_id_idx").on(table.userId),
+  ]
 );
 
 export const podcastEpisodes = pgTable(
@@ -134,6 +146,38 @@ export const podcastEpisodes = pgTable(
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  audiobooks: many(audiobooks),
+  podcasts: many(podcasts),
+}));
+
+export const audiobooksRelations = relations(audiobooks, ({ one, many }) => ({
+  user: one(user, {
+    fields: [audiobooks.userId],
+    references: [user.id],
+  }),
+  chapters: many(audiobookChapters),
+}));
+
+export const audiobookChaptersRelations = relations(audiobookChapters, ({ one }) => ({
+  audiobook: one(audiobooks, {
+    fields: [audiobookChapters.audiobookId],
+    references: [audiobooks.id],
+  }),
+}));
+
+export const podcastsRelations = relations(podcasts, ({ one, many }) => ({
+  user: one(user, {
+    fields: [podcasts.userId],
+    references: [user.id],
+  }),
+  episodes: many(podcastEpisodes),
+}));
+
+export const podcastEpisodesRelations = relations(podcastEpisodes, ({ one }) => ({
+  podcast: one(podcasts, {
+    fields: [podcastEpisodes.podcastId],
+    references: [podcasts.id],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
