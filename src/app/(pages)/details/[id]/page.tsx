@@ -2,7 +2,6 @@
 
 import { useState, use } from 'react';
 import Link from 'next/link';
-import Header from '@/src/components/header';
 import "./details.css"
 
 type PageParams = { id: string };
@@ -120,7 +119,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF8', fontFamily: "'Source Sans 3', sans-serif" }}>
 
-      <Header/>
+      
 
       {/* Hero Section */}
       <section className="border-b" style={{ background: '#232F3E', borderColor: '#37475A' }}>

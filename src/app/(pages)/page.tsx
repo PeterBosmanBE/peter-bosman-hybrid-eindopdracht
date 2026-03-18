@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Header from "@/src/components/header";
-import Footer from "@/src/components/footer";
 import "./home.css"
 
 const featuredContent = [
@@ -138,7 +136,7 @@ export default function Home() {
         fontFamily: "'Source Sans 3', sans-serif",
       }}
     >
-      <Header />
+
       {/* Hero */}
       <section
         className="px-6 py-12 md:py-20"
@@ -550,7 +548,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-      <Footer/>
     </div>
   );
 }
