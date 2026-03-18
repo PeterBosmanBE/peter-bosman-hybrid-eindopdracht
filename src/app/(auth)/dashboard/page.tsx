@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import AvatarDropdown from '@/src/components/avatar-dropdown';
 import "./dashboard.css"
+import { Dropzone } from '@/src/components/dropzone';
 
 const stats = [
   { label: 'Total Listeners', value: '12,847', change: '+12%', icon: 'users' },
@@ -360,36 +361,7 @@ export default function Dashboard() {
                   {/* File Upload */}
                   <div>
                     <label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Audio File</label>
-                    <div 
-                      className="border-2 border-dashed rounded-xl p-8 text-center transition-colors hover:border-orange-300 cursor-pointer"
-                      style={{ borderColor: '#E8E8E8' }}
-                    >
-                      {isUploading ? (
-                        <div>
-                          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(247, 148, 29, 0.1)' }}>
-                            <svg className="animate-spin w-8 h-8" style={{ color: '#F7941D' }} fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          </div>
-                          <p className="font-semibold mb-2" style={{ color: '#232F3E' }}>Uploading... {uploadProgress}%</p>
-                          <div className="w-48 mx-auto h-2 rounded-full" style={{ background: '#E8E8E8' }}>
-                            <div className="h-full rounded-full transition-all" style={{ width: `${uploadProgress}%`, background: '#F7941D' }} />
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(247, 148, 29, 0.1)' }}>
-                            <svg className="w-8 h-8" style={{ color: '#F7941D' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                          </div>
-                          <p className="font-semibold mb-1" style={{ color: '#232F3E' }}>Drag & drop your audio file</p>
-                          <p className="text-sm" style={{ color: '#666666' }}>or click to browse</p>
-                          <p className="text-xs mt-2" style={{ color: '#999999' }}>MP3, WAV, M4A up to 500MB</p>
-                        </>
-                      )}
-                    </div>
+                    <Dropzone/>
                   </div>
 
                   {/* Title */}
