@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import "./listening-page.css"
+import Logo from '@/src/components/ui/logo';
 
 type PageParams = { id: string };
 
@@ -109,14 +110,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
           </svg>
           Back
         </Link>
-        <Link href="/home" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#F7941D' }}>
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
-            </svg>
-          </div>
-          <span className="font-serif text-lg font-bold text-white">Chapter</span>
-        </Link>
+        <Logo isMainHeader={false} />
         <button 
           onClick={() => setShowChapters(!showChapters)}
           className="flex items-center gap-2 text-sm transition-colors"
