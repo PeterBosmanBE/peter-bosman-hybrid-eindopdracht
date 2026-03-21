@@ -81,14 +81,16 @@ export const audiobooks = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    author: text("author").notNull(),
+    author: text("author")
+      .notNull()
+      .references(() => user.name, { onDelete: "cascade" }),
     narrator: text("narrator"),
     duration: text("duration").notNull(),
     cover: text("cover").notNull(),
     description: text("description").notNull(),
     releaseDate: date("release_date").notNull(),
     language: text("language").notNull(),
-    publisher: text("publisher").notNull(),
+    publisher: text("publisher"),
     category: text("category").notNull(),
   },
   (table) => [
