@@ -4,63 +4,18 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import "./listening-page.css"
 import Logo from '@/src/components/ui/logo';
+import { Skeleton } from '@/src/components/ui/skeleton';
 
-type PageParams = { id: string };
-
-const contentData: Record<string, {
-  id: number;
-  title: string;
-  author: string;
-  narrator?: string;
-  cover: string;
-  chapters: { title: string; duration: string }[];
-}> = {
-  '1': {
-    id: 1,
-    title: 'The Psychology of Money',
-    author: 'Morgan Housel',
-    narrator: 'Chris Hill',
-    cover: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=400&fit=crop',
-    chapters: [
-      { title: 'Introduction', duration: '12:00' },
-      { title: 'No One\'s Crazy', duration: '24:32' },
-      { title: 'Luck & Risk', duration: '31:15' },
-      { title: 'Never Enough', duration: '28:44' },
-      { title: 'Confounding Compounding', duration: '22:18' },
-      { title: 'Getting Wealthy vs. Staying Wealthy', duration: '35:22' },
-      { title: 'Tails, You Win', duration: '27:05' },
-      { title: 'Freedom', duration: '19:33' },
-    ],
-  },
-};
-
-const defaultContent = {
-  id: 1,
-  title: 'The Psychology of Money',
-  author: 'Morgan Housel',
-  narrator: 'Chris Hill',
-  cover: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=400&fit=crop',
-  chapters: [
-    { title: 'Introduction', duration: '12:00' },
-    { title: 'No One\'s Crazy', duration: '24:32' },
-    { title: 'Luck & Risk', duration: '31:15' },
-    { title: 'Never Enough', duration: '28:44' },
-  ],
-};
-
-export default function Listen({ params }: { params: Promise<PageParams> }) {
-  const { id } = use(params);
-  const content = contentData[id] || defaultContent;
+export default function Listen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration] = useState(1440); // 24 minutes in seconds
+  const [duration] = useState(0); // 0 minutes in seconds
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
   const [currentChapter, setCurrentChapter] = useState(0);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [bookmarks, setBookmarks] = useState<number[]>([]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -92,19 +47,13 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
 
   const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-  const addBookmark = () => {
-    if (!bookmarks.includes(currentTime)) {
-      setBookmarks([...bookmarks, currentTime].sort((a, b) => a - b));
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#121212', fontFamily: "'Source Sans 3', sans-serif" }}>
 
 
       {/* Top Navigation */}
       <nav className="flex items-center justify-between px-6 py-4" style={{ background: '#1A1A1A' }}>
-        <Link href={`/details/${id}`} className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        <Link href="/" className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -129,27 +78,29 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
           {/* Cover Art */}
           <div className="relative mb-10">
             <div className={`absolute inset-0 rounded-full ${isPlaying ? 'pulse-ring' : ''}`} style={{ background: '#F7941D', filter: 'blur(60px)', opacity: 0.2 }}></div>
-            <img 
-              src={content.cover} 
-              alt={content.title}
-              className="w-64 md:w-80 rounded-xl shadow-2xl relative z-10"
-              style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+            <Skeleton               
+                className="w-64 md:w-80 rounded-xl shadow-2xl relative z-10"
+                style={{ aspectRatio: '1/1', objectFit: 'cover' }}
             />
           </div>
 
           {/* Title & Author */}
           <div className="text-center mb-8">
-            <h1 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{content.title}</h1>
-            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>{content.author}</p>
-            {content.narrator && (
-              <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Narrated by {content.narrator}</p>
-            )}
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">
+                <Skeleton className="h-7 w-100% mx-auto" />
+            </h1>
+            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <Skeleton className="h-5 w-100% mx-auto" />
+            </p>
+            {/* Narrated */}
+            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Narrated by</p>
+
           </div>
 
           {/* Chapter Info */}
           <div className="text-center mb-6">
             <p className="text-sm font-semibold" style={{ color: '#F7941D' }}>
-              Chapter {currentChapter + 1}: {content.chapters[currentChapter]?.title || 'Introduction'}
+              Chapter {currentChapter}
             </p>
           </div>
 
@@ -160,14 +111,6 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
                 className="absolute top-0 left-0 h-full rounded-full"
                 style={{ width: `${progress}%`, background: '#F7941D' }}
               />
-              {bookmarks.map((bm, i) => (
-                <div 
-                  key={i}
-                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full cursor-pointer"
-                  style={{ left: `${(bm / duration) * 100}%`, background: '#FF6B35' }}
-                  title={formatTime(bm)}
-                />
-              ))}
               <input
                 type="range"
                 min={0}
@@ -223,7 +166,6 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.min(content.chapters.length - 1, currentChapter + 1))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -233,7 +175,6 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             </button>
 
             <button 
-              onClick={() => setCurrentTime(Math.min(duration, currentTime + 30))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors relative"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -263,7 +204,6 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
 
             {/* Bookmark */}
             <button 
-              onClick={addBookmark}
               className="p-2 rounded-lg transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
               title="Add bookmark"
@@ -334,55 +274,22 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
                 </button>
               </div>
               <div className="space-y-1">
-                {content.chapters.map((chapter, index) => (
+
                   <button
-                    key={index}
-                    onClick={() => setCurrentChapter(index)}
-                    className={`w-full text-left p-4 rounded-lg transition-colors ${currentChapter === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                    className="w-full text-left p-4 rounded-lg transition-colors bg-white/10"
                   >
                     <div className="flex items-center gap-3">
-                      {currentChapter === index && isPlaying ? (
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#F7941D' }}>
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </div>
-                      ) : (
-                        <span className="w-6 h-6 text-sm font-semibold flex items-center justify-center" style={{ color: currentChapter === index ? '#F7941D' : 'rgba(255,255,255,0.4)' }}>
-                          {index + 1}
-                        </span>
-                      )}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold truncate ${currentChapter === index ? 'text-white' : ''}`} style={{ color: currentChapter === index ? 'white' : 'rgba(255,255,255,0.7)' }}>
-                          {chapter.title}
+                        <p className="text-sm font-semibold truncate text-white" style={{ color: 'white' }}>
+                          <Skeleton className="h-4 w-1/2" />
                         </p>
-                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{chapter.duration}</p>
+                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          0:00 - 0:00
+                        </p>
                       </div>
                     </div>
                   </button>
-                ))}
               </div>
-
-              {/* Bookmarks Section */}
-              {bookmarks.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="font-serif text-lg font-bold text-white mb-4">Bookmarks</h3>
-                  <div className="space-y-2">
-                    {bookmarks.map((bm, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentTime(bm)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-white/5"
-                      >
-                        <svg className="w-4 h-4" style={{ color: '#F7941D' }} fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                        </svg>
-                        <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{formatTime(bm)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
