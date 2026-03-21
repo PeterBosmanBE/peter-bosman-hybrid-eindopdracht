@@ -13,7 +13,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/src/components/ui/avatar";
-import { authClient } from "../lib/auth-client";
+import { authClient } from "@/src/server/auth/auth-client";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import SignIn from "./sign-in";
 

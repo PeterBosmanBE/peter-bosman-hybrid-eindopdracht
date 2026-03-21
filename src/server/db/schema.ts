@@ -143,6 +143,12 @@ export const podcastEpisodes = pgTable(
   (table) => [index("podcast_episodes_podcast_id_idx").on(table.podcastId)]
 );
 
+export const uploads = pgTable("uploads", (t) => ({
+  id: t.serial().primaryKey(),
+  url: t.text().notNull(),
+  createdAt: t.timestamp().defaultNow(),
+}));
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),

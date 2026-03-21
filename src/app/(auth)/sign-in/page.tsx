@@ -1,7 +1,7 @@
 "use client";
 
 import SignInSocials from "@/src/components/sign-in-socials";
-import { authClient } from "@/src/lib/auth-client";
+import { authClient } from "@/src/server/auth/auth-client";
 import { Turnstile } from "@marsidev/react-turnstile";
 import Link from "next/link";
 import { redirect, RedirectType } from "next/navigation";

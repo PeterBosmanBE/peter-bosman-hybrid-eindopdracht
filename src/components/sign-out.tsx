@@ -1,5 +1,5 @@
 "use client";
-import { authClient } from "@/src/lib/auth-client";
+import { authClient } from "@/src/server/auth/auth-client";
 
 export default function SignOut() {
   return (
