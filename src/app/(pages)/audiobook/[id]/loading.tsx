@@ -1,8 +1,10 @@
 'use client';
 
 import { Skeleton } from "@/src/components/ui/skeleton"
+import { useState } from "react";
 
 export default function LoadingDetails() {
+  const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');    
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF8', fontFamily: "'Source Sans 3', sans-serif" }}>
       <section className="border-b" style={{ background: '#232F3E', borderColor: '#37475A' }}>
@@ -26,42 +28,30 @@ export default function LoadingDetails() {
                 <Skeleton className="h-7 w-1/2" />
               </h1>
               {/* By: Author */}
-              <p className="text-lg mb-5" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                <Skeleton className="h-4 w-1/4" />
-              </p>
+              <Skeleton className="h-4 w-1/4 mb-5" />
               {/* Narrator */}
-              <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                <Skeleton className="h-4 w-1/3" />
-              </p>
+              <Skeleton className="h-4 w-1/3 mb-4" />
 
               <div className="flex flex-wrap gap-6 mb-8">
                 {/* Duration */}
                 <div>
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Duration</p>
-                  <p className="text-white font-semibold">
-                    <Skeleton className="h-4 w-full" />
-                  </p>
+                  <Skeleton className="h-4 w-full" />
                 </div>
                 {/* Release date */}
                 <div>
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Release Date</p>
-                  <p className="text-white font-semibold">
-                    <Skeleton className="h-4 w-full" />
-                  </p>
+                  <Skeleton className="h-4 w-full" />
                 </div>
                 {/* Language */}
                 <div>
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Language</p>
-                  <p className="text-white font-semibold">
-                    <Skeleton className="h-4 w-full" />
-                  </p>
+                  <Skeleton className="h-4 w-full" />
                 </div>
                 {/* Category */}
                 <div>
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Category</p>
-                  <p className="text-white font-semibold">
-                    <Skeleton className="h-4 w-full" />
-                  </p>
+                  <Skeleton className="h-4 w-full" />
                 </div>
               </div>
 
@@ -95,34 +85,36 @@ export default function LoadingDetails() {
           <div className="lg:col-span-2">
             <div className="mb-10">
               <h2 className="font-serif text-xl font-bold mb-4" style={{ color: '#232F3E' }}>About this audiobook</h2>
-              <p className="leading-relaxed" style={{ color: '#444444' }}>
-                <Skeleton className="h-4 w-full" />
-              </p>
-
+              <Skeleton className="h-4 w-full leading-relaxed" style={{ color: '#444444' }} />
                 <button
-
                   className="mt-3 text-sm font-semibold transition-colors"
                   style={{ color: '#F7941D' }}
                 >
                   <Skeleton className="h-4 w-32" />
                 </button>
-
             </div>
 
             <div>
               <div className="flex gap-6 mb-6 border-b" style={{ borderColor: '#E8E8E8' }}>
                 <button
+                  onClick={() => setActiveTab('chapters')}
                   className="pb-4 px-1 text-sm font-semibold transition-colors relative"
-                  style={{ color: '#666666' }}
+                  style={{ color: activeTab === 'chapters' ? '#232F3E' : '#666666' }}
                 >
-                  <Skeleton className="h-4 w-24" />
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
+                  Chapters
+                  {activeTab === 'chapters' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
+                  )}
                 </button>
                 <button
+                  onClick={() => setActiveTab('reviews')}
                   className="pb-4 px-1 text-sm font-semibold transition-colors relative"
                   style={{ color: '#666666' }}
                 >
-                  <Skeleton className="h-4 w-20" />
+                  Reviews
+                  {activeTab === 'reviews' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
+                  )}
                 </button>
               </div>
 

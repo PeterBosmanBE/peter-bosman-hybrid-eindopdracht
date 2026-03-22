@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { orpc } from '@/src/server/orpc/client';
 import Image from 'next/image';
 import './details.css';
+import LoadingDetails from './loading';
+import NotFound from './not-found';
 
 type PageParams = { id: string };
 
@@ -23,54 +25,20 @@ function formatDate(value: string | null) {
 export default function Details({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
   const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');
   const [isInLibrary, setIsInLibrary] = useState(false);
-
   const detailQuery = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
 
-  const content = detailQuery.data?.content;
-  const relatedContent = detailQuery.data?.related ?? [];
-
-  const handleGenerateSummary = () => {
-    if (!content) return;
-    setLoadingSummary(true);
-    setTimeout(() => {
-      setAiSummary(
-        `"${content.title}" by ${content.author} explores fundamental concepts through engaging storytelling. The author presents a unique perspective that challenges conventional thinking while remaining accessible to general audiences. Key themes include personal growth, understanding complex systems, and practical wisdom for everyday life. The narrative style combines research-backed insights with memorable anecdotes, making it an excellent choice for listeners seeking both entertainment and education.`
-      );
-      setLoadingSummary(false);
-    }, 2000);
-  };
-
-  if (detailQuery.isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAFAF8' }}>
-        <p style={{ color: '#666666' }}>Loading content...</p>
-      </div>
-    );
+  if (detailQuery.isPending) {
+    return <LoadingDetails />;
   }
 
-  if (detailQuery.isError || !content) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#FAFAF8' }}>
-        <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold mb-3" style={{ color: '#232F3E' }}>Content not found</h1>
-          <p className="mb-6" style={{ color: '#666666' }}>
-            This item was not found in your database.
-          </p>
-          <Link
-            href="/audiobook"
-            className="inline-flex items-center px-6 py-3 rounded-full font-semibold"
-            style={{ background: '#F7941D', color: 'white' }}
-          >
-            Back to audiobooks
-          </Link>
-        </div>
-      </div>
-    );
+  if (detailQuery.isError || (detailQuery.isFetched && !detailQuery.data)) {
+    return <NotFound />;
   }
+  
+  const content = detailQuery.data.content;
+  const relatedContent = detailQuery.data.related ?? [];
 
   const listItems =
     content.type === 'audiobook'
