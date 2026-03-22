@@ -9,6 +9,8 @@ import {
   podcastEpisodes,
   podcasts,
 } from "@/src/server/db/schema";
+import NoPodcastCover from "@/public/no-podcast-cover.webp";
+import NoAudiobookCover from "@/public/no-audiobook-cover.webp";
 
 const listContentInput = z
   .object({
@@ -21,10 +23,64 @@ const detailInput = z.object({
   id: z.string().min(1),
 });
 
+const createContentInput = z.object({
+  userId: z.string().min(1),
+  title: z.string().min(1).max(200),
+  author: z.string().min(1).max(120),
+  description: z.string().max(5000).optional(),
+  category: z.string().max(120).optional(),
+  cover: z.string().url().optional(),
+  duration: z.string().max(50).optional(),
+  language: z.string().max(50).optional(),
+  publisher: z.string().max(120).optional(),
+});
+
 export const contentRouter = {
+  createPodcast: os.input(createContentInput).handler(async ({ input }) => {
+    const id = crypto.randomUUID();
+    const today = new Date().toISOString().slice(0, 10);
+
+    await db.insert(podcasts).values({
+      id,
+      userId: input.userId,
+      title: input.title,
+      author: input.author,
+      duration: input.duration?.trim() || "00:00",
+      cover: input.cover?.trim() || NoPodcastCover.src,
+      description: input.description?.trim() || "",
+      releaseDate: today,
+      language: input.language?.trim() || "English",
+      publisher: input.publisher?.trim() || input.author,
+      category: input.category?.trim() || "General",
+    });
+
+    return { id };
+  }),
+
+  createAudiobook: os.input(createContentInput).handler(async ({ input }) => {
+    const id = crypto.randomUUID();
+    const today = new Date().toISOString().slice(0, 10);
+
+    await db.insert(audiobooks).values({
+      id,
+      userId: input.userId,
+      title: input.title,
+      author: input.author,
+      narrator: null,
+      duration: input.duration?.trim() || "00:00",
+      cover: input.cover?.trim() || NoAudiobookCover.src,
+      description: input.description?.trim() || "",
+      releaseDate: today,
+      language: input.language?.trim() || "English",
+      publisher: input.publisher?.trim() || input.author,
+      category: input.category?.trim() || "General",
+    });
+
+    return { id };
+  }),
+
   list: os.input(listContentInput).handler(async ({ input }) => {
     const type = input?.type ?? "all";
-    const userId = input?.userId;
 
     const shouldFetchAudiobooks = type === "all" || type === "audiobook";
     const shouldFetchPodcasts = type === "all" || type === "podcast";
@@ -40,7 +96,6 @@ export const contentRouter = {
             releaseDate: audiobooks.releaseDate,
           })
           .from(audiobooks)
-          .where(userId ? eq(audiobooks.userId, userId) : undefined)
           .orderBy(asc(audiobooks.title))
       : [];
 
@@ -55,7 +110,6 @@ export const contentRouter = {
             releaseDate: podcasts.releaseDate,
           })
           .from(podcasts)
-          .where(userId ? eq(podcasts.userId, userId) : undefined)
           .orderBy(asc(podcasts.title))
       : [];
 
