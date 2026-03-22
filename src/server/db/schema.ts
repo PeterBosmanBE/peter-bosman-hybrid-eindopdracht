@@ -106,6 +106,7 @@ export const audiobookChapters = pgTable(
     audiobookId: text("audiobook_id").references(() => audiobooks.id).notNull(),
     title: text("title").notNull(),
     duration: text("duration").notNull(),
+    narrator: text("narrator"),
   },
   (table) => [index("audiobook_chapters_audiobook_id_idx").on(table.audiobookId)]
 );
