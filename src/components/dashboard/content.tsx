@@ -4,16 +4,11 @@ import Image from "next/image";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/src/server/auth/auth-client";
-import { orpc } from "@/src/server/orpc/client";
-import {
+import { orpc } from "@/src/server/orpc/client";import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/src/components/ui/dialog";
-
-type ContentFilter = "all" | "audiobook" | "podcast";
+import { FilterType } from "@/src/types/FilterType";
+import CreateShow from "../create-show";
 
 function formatReleaseDate(date: string | null) {
   if (!date) return "-";
@@ -27,11 +22,8 @@ function formatReleaseDate(date: string | null) {
       });
 }
 
-export default function Content() {
-  const [createOpen, setCreateOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ContentFilter>("all");
-
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
+export default function Content() {  const [createOpen, setCreateOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");  const { data: session, isPending: isSessionPending } = authClient.useSession();
 
   const contentQuery = useQuery({
     ...orpc.content.list.queryOptions({
@@ -41,21 +33,13 @@ export default function Content() {
     enabled: !isSessionPending && Boolean(session?.user.id),
   });
 
-  const today = new Date();
-  const currentYear = today.getFullYear();
   const items = contentQuery.data?.items ?? [];
   const totals = contentQuery.data?.totals ?? { all: 0, audiobooks: 0, podcasts: 0 };
-
   return (
     <>
       {/* Create Show/Book Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create new Show/Book</DialogTitle>
-            <DialogDescription>WhatToCook 2026-{currentYear}</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
+        <CreateShow setCreateOpen={setCreateOpen} />
       </Dialog>
     <div>
         <div className="flex items-center justify-between mb-6">
