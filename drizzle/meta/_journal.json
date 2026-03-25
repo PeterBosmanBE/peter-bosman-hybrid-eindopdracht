@@ -22,6 +22,20 @@
       "when": 1773872397982,
       "tag": "0002_right_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774020642015,
+      "tag": "0003_woozy_synch",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774121680061,
+      "tag": "0004_bitter_captain_britain",
+      "breakpoints": true
     }
   ]
 }

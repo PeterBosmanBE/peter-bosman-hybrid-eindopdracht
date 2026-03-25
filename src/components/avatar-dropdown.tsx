@@ -13,9 +13,10 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/src/components/ui/avatar";
-import { authClient } from "../lib/auth-client";
+import { authClient } from "@/src/server/auth/auth-client";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import SignIn from "./sign-in";
+import Link from "next/link";
 
 export default function AvatarDropdown() {
   const { data: session } = authClient.useSession();
@@ -37,8 +38,8 @@ export default function AvatarDropdown() {
           {session ? (
             <DropdownMenuGroup>
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => console.log("Testing")}>
-                Profile
+              <DropdownMenuItem asChild>
+                <Link href={`/profile/${session.user.id}`}>Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuSeparator />

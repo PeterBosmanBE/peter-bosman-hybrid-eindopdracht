@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import AvatarDropdown from '@/src/components/avatar-dropdown';
-import "./dashboard.css"
+import Image from 'next/image';
+import { myContent } from '@/src/lib/test-data';
 import { Dropzone } from '@/src/components/dropzone';
+import Sidebar from '@/src/components/sidebar';
+import Content from '@/src/components/dashboard/content';
 
 const stats = [
   { label: 'Total Listeners', value: '12,847', change: '+12%', icon: 'users' },
@@ -13,11 +14,6 @@ const stats = [
   { label: 'Avg. Rating', value: '4.7', change: '+0.2', icon: 'star' },
 ];
 
-const myContent = [
-  { id: 1, title: 'Building Wealth Slowly', type: 'audiobook', status: 'published', listeners: 3420, rating: 4.8, cover: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=400&fit=crop' },
-  { id: 2, title: 'Morning Mindset', type: 'podcast', status: 'published', listeners: 5891, rating: 4.6, cover: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop' },
-  { id: 3, title: 'Leadership Lessons', type: 'audiobook', status: 'draft', listeners: 0, rating: 0, cover: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=400&fit=crop' },
-];
 
 const recentActivity = [
   { type: 'listen', user: 'Sarah M.', content: 'Building Wealth Slowly', time: '5 min ago' },
@@ -40,7 +36,7 @@ const weeklyData = [
 const categories = ['Business', 'Self-Help', 'Fiction', 'History', 'Science', 'Biography'];
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'upload' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'upload' | 'analytics' | 'test'>('overview');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadForm, setUploadForm] = useState({
@@ -84,81 +80,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FAFAF8', fontFamily: "'Source Sans 3', sans-serif" }}>
+    <div className="min-h-screen flex" style={{ background: '#FAFAF8' }}>
 
       {/* Sidebar */}
-      <aside 
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: '#232F3E' }}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#F7941D' }}>
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
-              </svg>
-            </div>
-            <span className="font-serif text-xl font-bold text-white">Chapter</span>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6">
-            <p className="px-3 mb-3 text-xs font-semibold uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>Creator Hub</p>
-            <ul className="space-y-1">
-              {[
-                { id: 'overview', label: 'Overview', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> },
-                { id: 'content', label: 'My Content', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> },
-                { id: 'upload', label: 'Upload', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg> },
-                { id: 'analytics', label: 'Analytics', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
-              ].map((item) => (
-                <li key={item.id}>
-                  <button
-                    onClick={() => setActiveTab(item.id as typeof activeTab)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === item.id ? 'text-white' : ''}`}
-                    style={{ 
-                      background: activeTab === item.id ? 'rgba(247, 148, 29, 0.15)' : 'transparent',
-                      color: activeTab === item.id ? '#F7941D' : 'rgba(255,255,255,0.6)'
-                    }}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <p className="px-3 mt-8 mb-3 text-xs font-semibold uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>Quick Links</p>
-            <ul className="space-y-1">
-              <li>
-                <Link href="/home" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  Browse Library
-                </Link>
-              </li>
-              <li>
-                <Link href="/home" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  Help Center
-                </Link>
-              </li>
-            </ul>
-          </nav>
-
-          {/* Profile */}
-          <div className="px-4 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{ background: '#F7941D' }}>
-                <AvatarDropdown/>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">John Doe</p>
-                <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>Creator</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Mobile Menu Toggle */}
       <button 
@@ -461,7 +386,7 @@ export default function Dashboard() {
                     {myContent.filter(c => c.status === 'published').map((item, index) => (
                       <div key={item.id} className="flex items-center gap-4">
                         <span className="text-lg font-bold" style={{ color: '#F7941D' }}>#{index + 1}</span>
-                        <img src={item.cover} alt={item.title} className="w-12 h-12 rounded-lg object-cover" />
+                        <Image src={item.cover} alt={item.title} width={48} height={48} className="w-12 h-12 rounded-lg object-cover" />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold truncate" style={{ color: '#232F3E' }}>{item.title}</p>
                           <p className="text-sm" style={{ color: '#666666' }}>{item.listeners.toLocaleString()} listeners</p>
@@ -470,7 +395,7 @@ export default function Dashboard() {
                           <svg className="w-4 h-4" style={{ color: '#F7941D' }} fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
-                          <span className="text-sm font-semibold" style={{ color: '#232F3E' }}>{item.rating}</span>
+                          <span className="text-sm font-semibold" style={{ color: '#232F3E' }}>Top</span>
                         </div>
                       </div>
                     ))}
@@ -501,6 +426,11 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+          {activeTab === 'test' && (
+            <div>
+              <Content/>
             </div>
           )}
         </div>

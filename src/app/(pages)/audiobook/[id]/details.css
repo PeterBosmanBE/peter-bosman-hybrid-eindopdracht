@@ -6,3 +6,10 @@
 .font-sans {
   font-family: "Source Sans 3", sans-serif;
 }
+
+.book-card {
+  transition: all 0.3s ease;
+}
+.book-card:hover {
+  transform: translateY(-4px);
+}
