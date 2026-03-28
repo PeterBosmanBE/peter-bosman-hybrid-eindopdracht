@@ -1,0 +1,1 @@
+export type DashboardTabType = 'overview' | 'content' | 'upload' | 'analytics' | 'profile' | 'test2';
