@@ -1,8 +1,8 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { use, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { orpc } from '@/src/server/orpc/client';
 import './details.css';
@@ -23,8 +23,6 @@ function formatDate(value: string | null) {
 export default function Details({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
   const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');
   const [isInLibrary, setIsInLibrary] = useState(false);
 
@@ -32,17 +30,6 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
 
   const content = detailQuery.data?.content;
   const relatedContent = detailQuery.data?.related ?? [];
-
-  const handleGenerateSummary = () => {
-    if (!content) return;
-    setLoadingSummary(true);
-    setTimeout(() => {
-      setAiSummary(
-        `"${content.title}" by ${content.author} explores fundamental concepts through engaging storytelling. The author presents a unique perspective that challenges conventional thinking while remaining accessible to general audiences. Key themes include personal growth, understanding complex systems, and practical wisdom for everyday life. The narrative style combines research-backed insights with memorable anecdotes, making it an excellent choice for listeners seeking both entertainment and education.`
-      );
-      setLoadingSummary(false);
-    }, 2000);
-  };
 
   if (detailQuery.isLoading) {
     return (
@@ -84,9 +71,11 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
           <div className="flex flex-col md:flex-row gap-10">
             <div className="shrink-0 flex justify-center md:justify-start">
               <div className="relative">
-                <img
+                <Image
                   src={content.cover}
                   alt={content.title}
+                  width={100}
+                  height={100}
                   className="w-56 md:w-64 rounded-lg shadow-2xl"
                   style={{ aspectRatio: '2/3', objectFit: 'cover' }}
                 />
@@ -177,44 +166,6 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                 >
                   {showFullDescription ? 'Show less' : 'Read more'}
                 </button>
-              )}
-            </div>
-
-            <div className="rounded-xl p-6 mb-10" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F7941D 0%, #FF6B35 100%)' }}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold" style={{ color: '#232F3E' }}>AI-Powered Summary</h3>
-                  <p className="text-xs" style={{ color: '#666666' }}>Get key insights in seconds</p>
-                </div>
-              </div>
-              {!aiSummary ? (
-                <button
-                  onClick={handleGenerateSummary}
-                  disabled={loadingSummary}
-                  className="w-full py-3 rounded-lg font-semibold transition-all disabled:opacity-60 border"
-                  style={{ borderColor: '#F7941D', color: '#F7941D' }}
-                >
-                  {loadingSummary ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Generating...
-                    </span>
-                  ) : (
-                    'Generate AI Summary'
-                  )}
-                </button>
-              ) : (
-                <div className="p-4 rounded-lg" style={{ background: '#F9F9F7' }}>
-                  <p className="text-sm leading-relaxed" style={{ color: '#444444' }}>{aiSummary}</p>
-                </div>
               )}
             </div>
 
