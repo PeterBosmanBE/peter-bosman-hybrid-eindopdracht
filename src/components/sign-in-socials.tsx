@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/src/components/ui/button";
 import { authClient } from "@/src/server/auth/auth-client";
-import { Icon } from "./ui/icons";
+import { Icon } from "./icons";
 
 type SignInOptions = {
   name: string;
@@ -10,7 +10,7 @@ type SignInOptions = {
   turnstileToken: string | null;
 };
 
-export default function SignInSocials({ name, icon, provider, turnstileToken }: SignInOptions) {
+export default function SignInSocials({ name, icon, provider }: SignInOptions) {
   return (
     <>
       <Button
@@ -19,11 +19,6 @@ export default function SignInSocials({ name, icon, provider, turnstileToken }: 
         onClick={() =>
           authClient.signIn.social({
             provider: provider,
-            fetchOptions: {
-              headers: {
-                "x-captcha-response": turnstileToken!,
-              },
-            },
           })
         }
       >

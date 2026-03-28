@@ -118,9 +118,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
 
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF8', fontFamily: "'Source Sans 3', sans-serif" }}>
-
       
-
       {/* Hero Section */}
       <section className="border-b" style={{ background: '#232F3E', borderColor: '#37475A' }}>
         <div className="max-w-7xl mx-auto px-6 py-12">

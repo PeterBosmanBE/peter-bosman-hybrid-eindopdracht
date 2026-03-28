@@ -1,5 +1,4 @@
 import { betterAuth } from "better-auth";
-import { captcha } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/src/server/db/client";
 import * as schema from "@/src/server/db/schema";
@@ -19,10 +18,4 @@ export const auth = betterAuth({
             clientSecret: process.env.DISCORD_CLIENT_SECRET as string, 
         },
     },
-    plugins: [ 
-        captcha({ 
-            provider: "cloudflare-turnstile", // or google-recaptcha, hcaptcha, captchafox
-            secretKey: process.env.TURNSTILE_SECRET_KEY!, 
-        }), 
-    ], 
 });

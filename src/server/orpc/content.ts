@@ -30,6 +30,7 @@ const createContentInput = z.object({
   description: z.string().max(5000).optional(),
   category: z.string().max(120).optional(),
   cover: z.string().url().optional(),
+  audio: z.string().url().optional(),
   duration: z.string().max(50).optional(),
   language: z.string().max(50).optional(),
   publisher: z.string().max(120).optional(),
@@ -54,6 +55,18 @@ export const contentRouter = {
       category: input.category?.trim() || "General",
     });
 
+    if (input.audio) {
+      await db.insert(podcastEpisodes).values({
+        id: crypto.randomUUID(),
+        podcastId: id,
+        title: "Episode 1",
+        duration: input.duration?.trim() || "00:00",
+        audio: input.audio,
+        description: input.description?.trim() || "First episode",
+        date: today,
+      });
+    }
+
     return { id };
   }),
 
@@ -68,6 +81,7 @@ export const contentRouter = {
       author: input.author,
       narrator: null,
       duration: input.duration?.trim() || "00:00",
+      audio: input.audio || "", // Added audio here
       cover: input.cover?.trim() || NoAudiobookCover.src,
       description: input.description?.trim() || "",
       releaseDate: today,

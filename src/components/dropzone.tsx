@@ -1,19 +1,17 @@
 "use client";
 
 import { orpc } from "@/src/server/orpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
-import { Icons } from "./ui/icons";
+import { Icons } from "./icons";
 
 export function Dropzone() {
-  const queryClient = useQueryClient();
   const uploadMutation = useMutation(
     orpc.uploads.create.mutationOptions({
       onSuccess: () => {
         toast.success("File uploaded successfully!");
-        queryClient.invalidateQueries({ queryKey: orpc.uploads.list.queryKey() });
       },
       onError: (error) => {
         toast.error("Upload failed");

@@ -8,6 +8,7 @@ import { orpc } from "@/src/server/orpc/client";import {
   Dialog,
 } from "@/src/components/ui/dialog";
 import { FilterType } from "@/src/types/FilterType";
+import { DashboardTabType } from "@/src/types/DashboardTabType";
 import CreateShow from "../create-show";
 
 function formatReleaseDate(date: string | null) {
@@ -22,7 +23,7 @@ function formatReleaseDate(date: string | null) {
       });
 }
 
-export default function Content() {  const [createOpen, setCreateOpen] = useState(false);
+export default function Content({ onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {  const [createOpen, setCreateOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");  const { data: session, isPending: isSessionPending } = authClient.useSession();
 
   const contentQuery = useQuery({
@@ -40,8 +41,9 @@ export default function Content() {  const [createOpen, setCreateOpen] = useStat
       {/* Create Show/Book Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <CreateShow setCreateOpen={setCreateOpen} />
+        {/* <CreateShow setCreateOpen={setCreateOpen} goToUploadTab={() => onTabChange?.('upload')} /> */}
       </Dialog>
-    <div>
+      <div>
         <div className="flex items-center justify-between mb-6">
             <div className="flex gap-2">
                 <button

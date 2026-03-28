@@ -81,12 +81,11 @@ export const audiobooks = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    author: text("author")
-      .notNull()
-      .references(() => user.name, { onDelete: "cascade" }),
+    author: text("author").notNull(),
     narrator: text("narrator"),
     duration: text("duration").notNull(),
     cover: text("cover").notNull(),
+    audio: text("audio").notNull(),
     description: text("description").notNull(),
     releaseDate: date("release_date").notNull(),
     language: text("language").notNull(),
@@ -141,16 +140,12 @@ export const podcastEpisodes = pgTable(
     podcastId: text("podcast_id").references(() => podcasts.id).notNull(),
     title: text("title").notNull(),
     duration: text("duration").notNull(),
+    audio: text("audio").notNull(),
+    description: text("description").notNull(),
     date: date("date").notNull(),
   },
   (table) => [index("podcast_episodes_podcast_id_idx").on(table.podcastId)]
 );
-
-export const uploads = pgTable("uploads", (t) => ({
-  id: t.serial().primaryKey(),
-  url: t.text().notNull(),
-  createdAt: t.timestamp().defaultNow(),
-}));
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),

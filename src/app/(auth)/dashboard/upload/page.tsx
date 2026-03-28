@@ -5,21 +5,15 @@ import { Field, FieldGroup, FieldLabel } from "@/src/components/ui/field";
 import { Input } from "@/src/components/ui/input";
 import { Separator } from "@/src/components/ui/separator";
 import { orpc } from "@/src/server/orpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import Image from "next/image";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dropzone } from "@/src/components/dropzone";
 
 export default function UploadPage() {
-  const queryClient = useQueryClient();
-
-  const imagesQuery = useSuspenseQuery(orpc.uploads.list.queryOptions());
-
   const uploadMutation = useMutation(
     orpc.uploads.create.mutationOptions({
       onSuccess: () => {
         toast.success("File uploaded successfully!");
-        queryClient.invalidateQueries({ queryKey: orpc.uploads.list.queryKey() });
       },
     }),
   );
@@ -50,19 +44,7 @@ export default function UploadPage() {
       <Separator className="my-10" />
 
       <div>
-        <h2 className="mt-8 mb-4 text-lg font-semibold">Uploaded Images</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {imagesQuery.data.map((upload) => (
-            <Image
-              key={upload.id}
-              src={upload.url}
-              alt={`Upload ${upload.id}`}
-              width={300}
-              height={300}
-              className="w-80 rounded-md"
-            />
-          ))}
-        </div>
+        <h2 className="mt-8 mb-4 text-lg font-semibold">Upload Complete</h2>
       </div>
     </div>
   );

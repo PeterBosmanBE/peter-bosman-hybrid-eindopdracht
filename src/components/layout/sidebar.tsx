@@ -2,10 +2,12 @@ import Link from "next/link";
 import AvatarDropdown from "@/src/components/avatar-dropdown";
 import Logo from '@/src/components/ui/logo';
 import { authClient } from "@/src/server/auth/auth-client";
+import { DashboardTabType } from "@/src/types/DashboardTabType";
+import { Button } from "../ui/button";
 
 interface SidebarProps {
-  activeTab: 'overview' | 'content' | 'upload' | 'analytics' | 'test';
-  onTabChange: (tab: 'overview' | 'content' | 'upload' | 'analytics' | 'test') => void;
+  activeTab: DashboardTabType;
+  onTabChange: (tab: DashboardTabType) => void;
 }
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
@@ -13,12 +15,11 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const username = session?.user?.name || "User";
   return (
     <aside 
-        className="fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-transform lg:translate-x-0 -translate-x-full"
-        style={{ background: '#232F3E' }}
+        className="fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-transform lg:translate-x-0 -translate-x-full bg-tertiary"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+          <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
             <Logo isMainHeader={false} />
           </div>
 
@@ -31,12 +32,12 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 { id: 'content', label: 'My Content', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> },
                 { id: 'upload', label: 'Upload', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg> },
                 { id: 'analytics', label: 'Analytics', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
-                { id: "test", label: "Test", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
+                { id: "profile", label: "Profile", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
               ].map((item) => (
                 <li key={item.id}>
-                  <button
+                  <Button 
                     onClick={() => onTabChange(item.id as typeof activeTab)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === item.id ? 'text-white' : ''}`}
+                    className={`w-full flex justify-start items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === item.id ? 'text-white' : ''}`}
                     style={{ 
                       background: activeTab === item.id ? 'rgba(247, 148, 29, 0.15)' : 'transparent',
                       color: activeTab === item.id ? '#F7941D' : 'rgba(255,255,255,0.6)'
@@ -44,7 +45,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                   >
                     {item.icon}
                     {item.label}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -67,9 +68,9 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </nav>
 
           {/* Profile */}
-          <div className="px-4 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+          <div className="px-4 py-4 border-t border-sidebar-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{ background: '#F7941D' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-avatar-border">
                 <AvatarDropdown/>
               </div>
               <div className="flex-1 min-w-0">
