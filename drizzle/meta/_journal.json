@@ -36,6 +36,20 @@
       "when": 1774121680061,
       "tag": "0004_bitter_captain_britain",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774399791197,
+      "tag": "0005_military_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774717813308,
+      "tag": "0006_red_groot",
+      "breakpoints": true
     }
   ]
 }
