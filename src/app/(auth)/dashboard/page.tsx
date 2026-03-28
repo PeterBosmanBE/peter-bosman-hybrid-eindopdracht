@@ -4,8 +4,16 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { myContent } from '@/src/lib/test-data';
 import { Dropzone } from '@/src/components/dropzone';
-import Sidebar from '@/src/components/sidebar';
+import Sidebar from '@/src/components/layout/sidebar';
 import Content from '@/src/components/dashboard/content';
+import { DashboardTabType } from '@/src/types/DashboardTabType';
+import UploadPage from './upload/page';
+import { Input } from '@/src/components/ui/input';
+import { Label } from '@/src/components/ui/label';
+import { Textarea } from '@/src/components/ui/textarea';
+import { Button } from '@/src/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
+import Profile from '@/src/components/dashboard/profile';
 
 const stats = [
   { label: 'Total Listeners', value: '12,847', change: '+12%', icon: 'users' },
@@ -36,7 +44,7 @@ const weeklyData = [
 const categories = ['Business', 'Self-Help', 'Fiction', 'History', 'Science', 'Biography'];
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'upload' | 'analytics' | 'test'>('overview');
+  const [activeTab, setActiveTab] = useState<DashboardTabType>('overview');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadForm, setUploadForm] = useState({
@@ -86,7 +94,7 @@ export default function Dashboard() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Mobile Menu Toggle */}
-      <button 
+      <Button 
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className="lg:hidden fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
         style={{ background: '#F7941D' }}
@@ -94,12 +102,12 @@ export default function Dashboard() {
         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
         </svg>
-      </button>
+      </Button>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         {/* Header */}
-        <header className="sticky top-0 z-30 px-6 py-4 border-b" style={{ background: '#FFFFFF', borderColor: '#E8E8E8' }}>
+        <header className="sticky top-0 z-30 px-6 py-4 border-b bg-white border-nav-border">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-serif text-2xl font-bold" style={{ color: '#232F3E' }}>
@@ -107,15 +115,16 @@ export default function Dashboard() {
                 {activeTab === 'content' && 'My Content'}
                 {activeTab === 'upload' && 'Upload'}
                 {activeTab === 'analytics' && 'Analytics'}
+                {activeTab === 'profile' && 'Profile'}
               </h1>
               <p className="text-sm" style={{ color: '#666666' }}>Welcome back, John</p>
             </div>
             <div className="flex items-center gap-3">
-              <button className="w-10 h-10 rounded-full flex items-center justify-center border transition-colors hover:bg-gray-50" style={{ borderColor: '#E8E8E8' }}>
+              <Button className="w-10 h-10 rounded-full flex items-center justify-center border transition-colors hover:bg-gray-50" style={{ borderColor: '#E8E8E8' }}>
                 <svg className="w-5 h-5" style={{ color: '#666666' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-              </button>
+              </Button>
             </div>
           </div>
         </header>
@@ -285,14 +294,14 @@ export default function Dashboard() {
                 <div className="space-y-6">
                   {/* File Upload */}
                   <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Audio File</label>
+                    <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Audio File</Label>
                     <Dropzone/>
                   </div>
 
                   {/* Title */}
                   <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Title</label>
-                    <input
+                    <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Title</Label>
+                    <Input
                       type="text"
                       value={uploadForm.title}
                       onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
@@ -305,36 +314,42 @@ export default function Dashboard() {
                   {/* Type & Category */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Type</label>
-                      <select
+                      <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Type</Label>
+                      <Select
                         value={uploadForm.type}
-                        onChange={(e) => setUploadForm({ ...uploadForm, type: e.target.value })}
-                        className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400"
-                        style={{ borderColor: '#E8E8E8' }}
+                        onValueChange={(value) => setUploadForm({ ...uploadForm, type: value })}
                       >
-                        <option value="audiobook">Audiobook</option>
-                        <option value="podcast">Podcast Episode</option>
-                      </select>
+                        <SelectTrigger className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400 bg-transparent" style={{ borderColor: '#E8E8E8' }}>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="audiobook">Audiobook</SelectItem>
+                          <SelectItem value="podcast">Podcast Episode</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Category</label>
-                      <select
+                      <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Category</Label>
+                      <Select
                         value={uploadForm.category}
-                        onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
-                        className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400"
-                        style={{ borderColor: '#E8E8E8' }}
+                        onValueChange={(value) => setUploadForm({ ...uploadForm, category: value })}
                       >
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400 bg-transparent" style={{ borderColor: '#E8E8E8' }}>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
                   {/* Description */}
                   <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Description</label>
-                    <textarea
+                    <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Description</Label>
+                    <Textarea
                       value={uploadForm.description}
                       onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
                       placeholder="Describe your content..."
@@ -345,14 +360,14 @@ export default function Dashboard() {
                   </div>
 
                   {/* Submit */}
-                  <button 
+                  <Button 
                     onClick={handleUpload}
                     disabled={isUploading}
                     className="w-full py-3.5 rounded-lg font-semibold transition-all hover:opacity-90 disabled:opacity-50"
                     style={{ background: '#F7941D', color: 'white' }}
                   >
                     {isUploading ? 'Uploading...' : 'Upload Content'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -428,9 +443,14 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          {activeTab === 'test' && (
+          {activeTab === 'profile' && (
             <div>
-              <Content/>
+              <Profile />
+            </div>
+          )}
+          {activeTab === 'test2' && (
+            <div>
+              <UploadPage />
             </div>
           )}
         </div>
