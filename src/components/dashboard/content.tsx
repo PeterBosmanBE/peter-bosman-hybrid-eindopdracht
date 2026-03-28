@@ -40,7 +40,8 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
     <>
       {/* Create Show/Book Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <CreateShow setCreateOpen={setCreateOpen} goToUploadTab={() => onTabChange?.('upload')} />
+        <CreateShow setCreateOpen={setCreateOpen} />
+        {/* <CreateShow setCreateOpen={setCreateOpen} goToUploadTab={() => onTabChange?.('upload')} /> */}
       </Dialog>
       <div>
         <div className="flex items-center justify-between mb-6">
