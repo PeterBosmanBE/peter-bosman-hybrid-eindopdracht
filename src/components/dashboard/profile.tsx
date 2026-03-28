@@ -26,7 +26,7 @@ export default function Profile() {
   const [bio, setBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<{name?: string, image?: string}>({});
-  const [linkedAccounts, setLinkedAccounts] = useState<unknown[]>([]);
+  const [linkedAccounts, setLinkedAccounts] = useState<{ providerId: string }[]>([]);
 
   useEffect(() => {
     if (session?.user) {
