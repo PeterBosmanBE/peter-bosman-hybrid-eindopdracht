@@ -39,9 +39,11 @@ export default function AvatarDropdown() {
             <DropdownMenuGroup>
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuItem asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href={`/profile/${session.user.id}`}>Profile</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuSeparator />
             </DropdownMenuGroup>
           ) : (

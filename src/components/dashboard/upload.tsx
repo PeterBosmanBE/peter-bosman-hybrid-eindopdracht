@@ -6,7 +6,7 @@ import { Input } from "@/src/components/ui/input"
 import { Textarea } from "@/src/components/ui/textarea"
 import { cn } from "@/src/lib/utils"
 import { Dropzone } from "../dropzone"
-import { Icons } from "@/src/components/ui/icons"
+import { Icons } from "@/src/components/icons"
 import Image from "next/image"
 import { Progress } from "../ui/progress"
 
