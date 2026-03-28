@@ -2,7 +2,6 @@
 
 import SignInSocials from "@/src/components/sign-in-socials";
 import { authClient } from "@/src/server/auth/auth-client";
-import { Turnstile } from "@marsidev/react-turnstile";
 import Link from "next/link";
 import { redirect, RedirectType } from "next/navigation";
 import { useState } from "react";
@@ -67,10 +66,7 @@ export default function SocialLogin() {
             <SignInSocials name={"GitHub"} provider="github" icon="github" turnstileToken={turnstileToken} />
             <SignInSocials name={"Discord"} provider="discord" icon="discord" turnstileToken={turnstileToken} />
           </div>
-
-          <div className="mt-6 flex justify-center">
-            <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} onSuccess={setTurnstileToken} />
-          </div>
+          
         </div>
 
         {/* Footer text */}

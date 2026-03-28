@@ -10,7 +10,6 @@
     "drizzle:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@marsidev/react-turnstile": "^1.4.2",
     "@orpc/client": "^1.13.6",
     "@orpc/server": "^1.13.6",
     "@orpc/tanstack-query": "^1.13.6",
