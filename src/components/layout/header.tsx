@@ -1,8 +1,10 @@
 "use client";
 import Link from "next/link";
-import AvatarDropdown from "./avatar-dropdown";
+import AvatarDropdown from "../avatar-dropdown";
 import { useState } from "react";
-import Logo from "./ui/logo";
+import Logo from "../ui/logo";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,8 +14,7 @@ export default function Header() {
     <>
       {/* Navigation */}
       <nav
-        className="sticky top-0 z-50 border-b"
-        style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}
+        className="sticky top-0 z-50 border-b bg-white border-nav-border"
       >
         <div className="max-w-7xl mx-auto">
           {/* Top Bar */}
@@ -24,7 +25,7 @@ export default function Header() {
             {/* Search */}
             <div className="flex-1 max-w-xl mx-8 hidden md:block">
               <div className="relative">
-                <input
+                <Input
                   type="text"
                   placeholder="Search for audiobooks, podcasts, authors..."
                   value={searchQuery}
@@ -36,7 +37,7 @@ export default function Header() {
                     color: "#232F3E",
                   }}
                 />
-                <button className="absolute right-4 top-1/2 -translate-y-1/2">
+                <Button className="absolute right-4 top-1/2 -translate-y-1/2" variant="ghost" size="icon">
                   <svg
                     className="w-5 h-5"
                     style={{ color: "#666666" }}
@@ -51,7 +52,7 @@ export default function Header() {
                       d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                     />
                   </svg>
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -62,17 +63,10 @@ export default function Header() {
                 className="nav-item hidden md:block text-sm font-semibold transition-colors"
                 style={{ color: "#232F3E" }}
               >
-                Library
-              </Link>
-              <Link
-                href="/dashboard"
-                className="nav-item hidden md:block text-sm font-semibold transition-colors"
-                style={{ color: "#232F3E" }}
-              >
                 Dashboard
               </Link>
               <AvatarDropdown />
-              <button
+              <Button
                 className="md:hidden"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
@@ -94,30 +88,22 @@ export default function Header() {
                     }
                   />
                 </svg>
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Mobile Menu */}
           {isMenuOpen && (
             <div
-              className="md:hidden px-6 pb-4 border-t"
-              style={{ borderColor: "#E8E8E8" }}
+              className="md:hidden px-6 pb-4 border-t border-nav-border"
             >
-              <input
+              <Input
                 type="text"
                 placeholder="Search..."
                 className="w-full mt-4 py-3 px-4 rounded-lg text-sm border"
                 style={{ background: "#F5F5F5", borderColor: "#E8E8E8" }}
               />
               <div className="flex flex-col gap-3 mt-4">
-                <Link
-                  href="/dashboard"
-                  className="text-sm font-semibold"
-                  style={{ color: "#232F3E" }}
-                >
-                  Library
-                </Link>
                 <Link
                   href="/dashboard"
                   className="text-sm font-semibold"
