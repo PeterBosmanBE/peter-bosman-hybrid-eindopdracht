@@ -135,7 +135,6 @@ export default function Upload() {
     try {
       /* First upload standard files. For now fake since we can assume file exists but uploads api uses 'File' obj.
        Upload file: a proper app would upload 'data.file' via a mutation and grab URL here. */
-
       let audioUrl = "";
       let coverUrl = "";
 
