@@ -14,17 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chapter.peterbosman.be"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL!),
   title: {
     default: "Chapter",
-    template: "%s | Chapter",
+    template: "%s - Chapter",
   },
   description: "Chapter is a audiobook & podcast website.",
   openGraph: {
     title: "Chapter",
     description: "Chapter is a audiobook & podcast website.",
     siteName: "Chapter",
-    url: "https://chapter.peterbosman.be",
+    url: process.env.NEXT_PUBLIC_BASE_URL!,
     type: "website",
   },
   twitter: {
