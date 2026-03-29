@@ -57,6 +57,13 @@
       "when": 1774800188035,
       "tag": "0007_flashy_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774814577118,
+      "tag": "0008_slippery_shocker",
+      "breakpoints": true
     }
   ]
 }
