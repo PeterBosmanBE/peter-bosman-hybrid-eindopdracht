@@ -1,39 +1,138 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
-import "./listening-page.css"
 import Logo from '@/src/components/ui/logo';
-import { Skeleton } from '@/src/components/ui/skeleton';
+import { orpc } from '@/src/server/orpc/client';
+import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/src/components/ui/input';
 
-export default function Listen() {
+type PageParams = { id: string };
+
+export default function ListenPodcast({ params }: { params: Promise<PageParams> }) {
+  const { id } = use(params);
+  
+  const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
+  const content = data?.content;
+  const isPodcast = content?.type === 'podcast';
+  const podcastEpisodes = isPodcast ? content.episodes : [];
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration] = useState(0); // 0 minutes in seconds
+  const [duration, setDuration] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
-  const [currentChapter, setCurrentChapter] = useState(0);
+  const [currentEpisode, setCurrentEpisode] = useState(0);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [isReady, setIsReady] = useState(false);
+
+  // Derive audio url from the current episode
+  const currentAudioUrl = podcastEpisodes[currentEpisode]?.audio || '';
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime((prev) => {
-          if (prev >= duration) {
-            setIsPlaying(false);
-            return prev;
-          }
-          return prev + playbackSpeed;
-        });
-      }, 1000);
+    if (!currentAudioUrl) return;
+    
+    if (!audioRef.current) {
+        audioRef.current = new Audio(currentAudioUrl);
+    } else if (audioRef.current.src !== currentAudioUrl) {
+        audioRef.current.src = currentAudioUrl;
     }
-    return () => clearInterval(interval);
-  }, [isPlaying, duration, playbackSpeed]);
+    
+    const audio = audioRef.current;
+    
+    const setAudioData = () => {
+        setDuration(audio.duration);
+        setIsReady(true);
+    }
+    const setAudioTime = () => {
+        setCurrentTime(audio.currentTime);
+    }
+    const setAudioEnd = () => {
+        setIsPlaying(false);
+        // Autoplay next episode?
+        if (podcastEpisodes.length && currentEpisode < podcastEpisodes.length - 1) {
+            setCurrentEpisode(prev => prev + 1);
+            setIsPlaying(true);
+        }
+    }
+    
+    audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('timeupdate', setAudioTime);
+    audio.addEventListener('ended', setAudioEnd);
+    
+    return () => {
+        audio.removeEventListener('loadedmetadata', setAudioData);
+        audio.removeEventListener('timeupdate', setAudioTime);
+        audio.removeEventListener('ended', setAudioEnd);
+    }
+  }, [currentAudioUrl, podcastEpisodes, currentEpisode]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current && isReady) {
+        if (isPlaying) {
+            audioRef.current.play().catch(e => console.error("Playback failed", e));
+        } else {
+            audioRef.current.pause();
+        }
+    }
+  }, [isPlaying, isReady, currentAudioUrl]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+        audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+        audioRef.current.volume = volume / 100;
+    }
+  }, [volume]);
+
+  // Sleep timer logic
+  useEffect(() => {
+    if (sleepTimer === null || !isPlaying) return;
+    
+    const timeout = setTimeout(() => {
+      setIsPlaying(false);
+      setSleepTimer(null);
+    }, sleepTimer * 60 * 1000);
+    
+    return () => clearTimeout(timeout);
+  }, [sleepTimer, isPlaying]);
+
+  const handleSeek = (newTime: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const skipForward = () => {
+    handleSeek(Math.min(duration, currentTime + 30));
+  };
+
+  const skipBackward = () => {
+    handleSeek(Math.max(0, currentTime - 30));
+  };
 
   const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return "0:00";
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
@@ -43,17 +142,32 @@ export default function Listen() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const progress = (currentTime / duration) * 100;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+  const addBookmark = () => {
+    if (!bookmarks.includes(currentTime)) {
+      setBookmarks([...bookmarks, currentTime].sort((a, b) => a - b));
+    }
+  };
+
+  if (isLoading || !content) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-4" style={{ background: '#121212' }}>
+         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+         <p className="text-white text-lg">Loading podcast...</p>
+      </div>
+    );
+  }
+
+  const episode = podcastEpisodes[currentEpisode];
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#121212', fontFamily: "'Source Sans 3', sans-serif" }}>
 
-
-      {/* Top Navigation */}
       <nav className="flex items-center justify-between px-6 py-4" style={{ background: '#1A1A1A' }}>
-        <Link href="/" className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        <Link href={`/details/${id}`} className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -68,55 +182,59 @@ export default function Listen() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
-          Chapters
+          Episodes
         </button>
       </nav>
 
-      <div className="flex-1 flex">
-        {/* Main Player Area */}
-        <div className={`flex-1 flex flex-col items-center justify-center p-8 transition-all ${showChapters ? 'lg:mr-80' : ''}`}>
-          {/* Cover Art */}
+      <div className="flex-1 flex overflow-hidden">
+        <div className={`flex-1 flex flex-col items-center justify-center p-8 transition-all overflow-y-auto ${showChapters ? 'lg:mr-80' : ''}`}>
           <div className="relative mb-10">
             <div className={`absolute inset-0 rounded-full ${isPlaying ? 'pulse-ring' : ''}`} style={{ background: '#F7941D', filter: 'blur(60px)', opacity: 0.2 }}></div>
-            <Skeleton               
-                className="w-64 md:w-80 rounded-xl shadow-2xl relative z-10"
-                style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+            <img 
+              src={content.cover || ''} 
+              alt={content.title}
+              className="w-64 md:w-80 rounded-xl shadow-2xl relative z-10"
+              style={{ aspectRatio: '1/1', objectFit: 'cover' }}
             />
           </div>
 
-          {/* Title & Author */}
           <div className="text-center mb-8">
-            <h1 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">
-                <Skeleton className="h-7 w-100% mx-auto" />
-            </h1>
-            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                <Skeleton className="h-5 w-100% mx-auto" />
-            </p>
-            {/* Narrated */}
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Narrated by</p>
-
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{content.title}</h1>
+            <p className="text-lg mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>{content.author}</p>
           </div>
 
-          {/* Chapter Info */}
-          <div className="text-center mb-6">
-            <p className="text-sm font-semibold" style={{ color: '#F7941D' }}>
-              Chapter {currentChapter}
-            </p>
-          </div>
+          {episode && (
+            <div className="text-center mb-6">
+                <p className="text-sm font-semibold" style={{ color: '#F7941D' }}>
+                Currently Playing: {episode.title}
+                </p>
+            </div>
+          )}
 
-          {/* Progress Bar */}
           <div className="w-full max-w-xl mb-4">
             <div className="relative h-1.5 rounded-full cursor-pointer group" style={{ background: 'rgba(255,255,255,0.1)' }}>
               <div 
                 className="absolute top-0 left-0 h-full rounded-full"
                 style={{ width: `${progress}%`, background: '#F7941D' }}
               />
-              <input
+              {bookmarks.map((bm, i) => (
+                <div 
+                  key={i}
+                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full cursor-pointer hover:scale-150 transition-transform"
+                  style={{ left: `${(bm / duration) * 100}%`, background: '#FF6B35' }}
+                  title={formatTime(bm)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSeek(bm);
+                  }}
+                />
+              ))}
+              <Input
                 type="range"
                 min={0}
-                max={duration}
+                max={duration || 100}
                 value={currentTime}
-                onChange={(e) => setCurrentTime(Number(e.target.value))}
+                onChange={(e) => handleSeek(Number(e.target.value))}
                 className="absolute inset-0 w-full opacity-0 cursor-pointer"
               />
             </div>
@@ -126,10 +244,9 @@ export default function Listen() {
             </div>
           </div>
 
-          {/* Main Controls */}
           <div className="flex items-center gap-6 mb-8">
             <button 
-              onClick={() => setCurrentTime(Math.max(0, currentTime - 30))}
+              onClick={skipBackward}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors relative"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -140,7 +257,7 @@ export default function Listen() {
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.max(0, currentChapter - 1))}
+              onClick={() => setCurrentEpisode(Math.max(0, currentEpisode - 1))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -166,6 +283,7 @@ export default function Listen() {
             </button>
 
             <button 
+              onClick={() => setCurrentEpisode(Math.min((podcastEpisodes.length || 1) - 1, currentEpisode + 1))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -175,6 +293,7 @@ export default function Listen() {
             </button>
 
             <button 
+              onClick={skipForward}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors relative"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -185,9 +304,7 @@ export default function Listen() {
             </button>
           </div>
 
-          {/* Secondary Controls */}
           <div className="flex items-center gap-8">
-            {/* Playback Speed */}
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => {
@@ -202,8 +319,8 @@ export default function Listen() {
               </button>
             </div>
 
-            {/* Bookmark */}
             <button 
+              onClick={addBookmark}
               className="p-2 rounded-lg transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
               title="Add bookmark"
@@ -213,7 +330,6 @@ export default function Listen() {
               </svg>
             </button>
 
-            {/* Sleep Timer */}
             <div className="relative">
               <button 
                 onClick={() => setShowSleepMenu(!showSleepMenu)}
@@ -240,12 +356,11 @@ export default function Listen() {
               )}
             </div>
 
-            {/* Volume */}
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.6)' }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
               </svg>
-              <input
+              <Input
                 type="range"
                 min={0}
                 max={100}
@@ -258,15 +373,14 @@ export default function Listen() {
           </div>
         </div>
 
-        {/* Chapters Sidebar */}
         {showChapters && (
           <div 
-            className="fixed right-0 top-0 bottom-0 w-80 overflow-y-auto border-l"
+            className="fixed right-0 top-0 bottom-0 w-80 overflow-y-auto border-l z-20"
             style={{ background: '#1A1A1A', borderColor: 'rgba(255,255,255,0.1)' }}
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-serif text-lg font-bold text-white">Chapters</h3>
+                <h3 className="font-serif text-lg font-bold text-white">Episodes</h3>
                 <button onClick={() => setShowChapters(false)} className="p-1">
                   <svg className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -274,22 +388,59 @@ export default function Listen() {
                 </button>
               </div>
               <div className="space-y-1">
-
+                {podcastEpisodes.length > 0 ? podcastEpisodes.map((ep, index) => (
                   <button
-                    className="w-full text-left p-4 rounded-lg transition-colors bg-white/10"
+                    key={index}
+                    onClick={() => {
+                        setCurrentEpisode(index);
+                        setIsPlaying(true);
+                    }}
+                    className={`w-full text-left p-4 rounded-lg transition-colors ${currentEpisode === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-3">
+                      {currentEpisode === index && isPlaying ? (
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#F7941D' }}>
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      ) : (
+                        <span className="w-6 h-6 text-sm font-semibold flex items-center justify-center" style={{ color: currentEpisode === index ? '#F7941D' : 'rgba(255,255,255,0.4)' }}>
+                          {index + 1}
+                        </span>
+                      )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate text-white" style={{ color: 'white' }}>
-                          <Skeleton className="h-4 w-1/2" />
+                        <p className={`text-sm font-semibold truncate ${currentEpisode === index ? 'text-white' : ''}`} style={{ color: currentEpisode === index ? 'white' : 'rgba(255,255,255,0.7)' }}>
+                          {ep.title}
                         </p>
-                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                          0:00 - 0:00
-                        </p>
+                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{ep.duration}</p>
                       </div>
                     </div>
                   </button>
+                )) : (
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>No episodes available.</p>    
+                )}
               </div>
+
+              {bookmarks.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="font-serif text-lg font-bold text-white mb-4">Bookmarks</h3>
+                  <div className="space-y-2">
+                    {bookmarks.map((bm, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSeek(bm)}
+                        className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-white/5"
+                      >
+                        <svg className="w-4 h-4" style={{ color: '#F7941D' }} fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                        </svg>
+                        <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{formatTime(bm)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

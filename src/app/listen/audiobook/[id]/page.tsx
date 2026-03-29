@@ -1,59 +1,28 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
-import "../listening-page.css"
 import Logo from '@/src/components/ui/logo';
+import { orpc } from '@/src/server/orpc/client';
+import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/src/components/ui/input';
+import { Button } from '@/src/components/ui/button';
 
 type PageParams = { id: string };
 
-const contentData: Record<string, {
-  id: number;
-  title: string;
-  author: string;
-  narrator?: string;
-  cover: string;
-  chapters: { title: string; duration: string }[];
-}> = {
-  '1': {
-    id: 1,
-    title: 'The Psychology of Money',
-    author: 'Morgan Housel',
-    narrator: 'Chris Hill',
-    cover: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=400&fit=crop',
-    chapters: [
-      { title: 'Introduction', duration: '12:00' },
-      { title: 'No One\'s Crazy', duration: '24:32' },
-      { title: 'Luck & Risk', duration: '31:15' },
-      { title: 'Never Enough', duration: '28:44' },
-      { title: 'Confounding Compounding', duration: '22:18' },
-      { title: 'Getting Wealthy vs. Staying Wealthy', duration: '35:22' },
-      { title: 'Tails, You Win', duration: '27:05' },
-      { title: 'Freedom', duration: '19:33' },
-    ],
-  },
-};
-
-const defaultContent = {
-  id: 1,
-  title: 'The Psychology of Money',
-  author: 'Morgan Housel',
-  narrator: 'Chris Hill',
-  cover: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=400&fit=crop',
-  chapters: [
-    { title: 'Introduction', duration: '12:00' },
-    { title: 'No One\'s Crazy', duration: '24:32' },
-    { title: 'Luck & Risk', duration: '31:15' },
-    { title: 'Never Enough', duration: '28:44' },
-  ],
-};
-
-export default function Listen({ params }: { params: Promise<PageParams> }) {
+export default function ListenAudiobook({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
-  const content = contentData[id] || defaultContent;
+  
+  const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
+  const content = data?.content;
+  const audioUrl = content?.type === 'audiobook' ? content.audio : undefined;
+  const audiobookChapters = content?.type === 'audiobook' ? content.chapters : [];
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration] = useState(1440); // 24 minutes in seconds
+  const [duration, setDuration] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
@@ -61,24 +30,102 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime((prev) => {
-          if (prev >= duration) {
-            setIsPlaying(false);
-            return prev;
-          }
-          return prev + playbackSpeed;
-        });
-      }, 1000);
+    if (!audioUrl) return;
+    
+    if (!audioRef.current) {
+        audioRef.current = new Audio(audioUrl);
+    } else if (audioRef.current.src !== audioUrl) {
+        audioRef.current.src = audioUrl;
     }
-    return () => clearInterval(interval);
-  }, [isPlaying, duration, playbackSpeed]);
+    
+    const audio = audioRef.current;
+    
+    const setAudioData = () => {
+        setDuration(audio.duration);
+        setIsReady(true);
+    }
+    const setAudioTime = () => {
+        setCurrentTime(audio.currentTime);
+    }
+    const setAudioEnd = () => {
+        setIsPlaying(false);
+    }
+    
+    audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('timeupdate', setAudioTime);
+    audio.addEventListener('ended', setAudioEnd);
+    
+    return () => {
+        audio.removeEventListener('loadedmetadata', setAudioData);
+        audio.removeEventListener('timeupdate', setAudioTime);
+        audio.removeEventListener('ended', setAudioEnd);
+    }
+  }, [audioUrl]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current && isReady) {
+        if (isPlaying) {
+            audioRef.current.play().catch(e => console.error("Playback failed", e));
+        } else {
+            audioRef.current.pause();
+        }
+    }
+  }, [isPlaying, isReady]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+        audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+        audioRef.current.volume = volume / 100;
+    }
+  }, [volume]);
+
+  // Sleep timer logic
+  useEffect(() => {
+    if (sleepTimer === null || !isPlaying) return;
+    
+    const timeout = setTimeout(() => {
+      setIsPlaying(false);
+      setSleepTimer(null);
+    }, sleepTimer * 60 * 1000);
+    
+    return () => clearTimeout(timeout);
+  }, [sleepTimer, isPlaying]);
+
+  const handleSeek = (newTime: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const skipForward = () => {
+    handleSeek(Math.min(duration, currentTime + 30));
+  };
+
+  const skipBackward = () => {
+    handleSeek(Math.max(0, currentTime - 30));
+  };
 
   const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return "0:00";
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
@@ -88,7 +135,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const progress = (currentTime / duration) * 100;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -98,11 +145,18 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
     }
   };
 
+  if (isLoading || !content) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-4" style={{ background: '#121212' }}>
+         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+         <p className="text-white text-lg">Loading audiobook...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#121212', fontFamily: "'Source Sans 3', sans-serif" }}>
 
-
-      {/* Top Navigation */}
       <nav className="flex items-center justify-between px-6 py-4" style={{ background: '#1A1A1A' }}>
         <Link href={`/details/${id}`} className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,21 +177,18 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
         </button>
       </nav>
 
-      <div className="flex-1 flex">
-        {/* Main Player Area */}
-        <div className={`flex-1 flex flex-col items-center justify-center p-8 transition-all ${showChapters ? 'lg:mr-80' : ''}`}>
-          {/* Cover Art */}
+      <div className="flex-1 flex overflow-hidden">
+        <div className={`flex-1 flex flex-col items-center justify-center p-8 transition-all overflow-y-auto ${showChapters ? 'lg:mr-80' : ''}`}>
           <div className="relative mb-10">
             <div className={`absolute inset-0 rounded-full ${isPlaying ? 'pulse-ring' : ''}`} style={{ background: '#F7941D', filter: 'blur(60px)', opacity: 0.2 }}></div>
             <img 
-              src={content.cover} 
+              src={content.cover || ''} 
               alt={content.title}
               className="w-64 md:w-80 rounded-xl shadow-2xl relative z-10"
               style={{ aspectRatio: '1/1', objectFit: 'cover' }}
             />
           </div>
 
-          {/* Title & Author */}
           <div className="text-center mb-8">
             <h1 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{content.title}</h1>
             <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>{content.author}</p>
@@ -146,14 +197,14 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             )}
           </div>
 
-          {/* Chapter Info */}
-          <div className="text-center mb-6">
-            <p className="text-sm font-semibold" style={{ color: '#F7941D' }}>
-              Chapter {currentChapter + 1}: {content.chapters[currentChapter]?.title || 'Introduction'}
-            </p>
-          </div>
+          {audiobookChapters.length > 0 && (
+            <div className="text-center mb-6">
+                <p className="text-sm font-semibold" style={{ color: '#F7941D' }}>
+                Chapter {currentChapter + 1}: {audiobookChapters[currentChapter]?.title || 'Chapter'}
+                </p>
+            </div>
+          )}
 
-          {/* Progress Bar */}
           <div className="w-full max-w-xl mb-4">
             <div className="relative h-1.5 rounded-full cursor-pointer group" style={{ background: 'rgba(255,255,255,0.1)' }}>
               <div 
@@ -163,17 +214,21 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
               {bookmarks.map((bm, i) => (
                 <div 
                   key={i}
-                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full cursor-pointer"
+                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full cursor-pointer hover:scale-150 transition-transform"
                   style={{ left: `${(bm / duration) * 100}%`, background: '#FF6B35' }}
                   title={formatTime(bm)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSeek(bm);
+                  }}
                 />
               ))}
-              <input
+              <Input
                 type="range"
                 min={0}
-                max={duration}
+                max={duration || 100}
                 value={currentTime}
-                onChange={(e) => setCurrentTime(Number(e.target.value))}
+                onChange={(e) => handleSeek(Number(e.target.value))}
                 className="absolute inset-0 w-full opacity-0 cursor-pointer"
               />
             </div>
@@ -183,10 +238,9 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             </div>
           </div>
 
-          {/* Main Controls */}
           <div className="flex items-center gap-6 mb-8">
             <button 
-              onClick={() => setCurrentTime(Math.max(0, currentTime - 30))}
+              onClick={skipBackward}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors relative"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -223,7 +277,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.min(content.chapters.length - 1, currentChapter + 1))}
+              onClick={() => setCurrentChapter(Math.min((audiobookChapters.length || 1) - 1, currentChapter + 1))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -233,7 +287,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             </button>
 
             <button 
-              onClick={() => setCurrentTime(Math.min(duration, currentTime + 30))}
+              onClick={skipForward}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors relative"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -244,9 +298,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
             </button>
           </div>
 
-          {/* Secondary Controls */}
           <div className="flex items-center gap-8">
-            {/* Playback Speed */}
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => {
@@ -261,7 +313,6 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
               </button>
             </div>
 
-            {/* Bookmark */}
             <button 
               onClick={addBookmark}
               className="p-2 rounded-lg transition-colors"
@@ -273,39 +324,12 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
               </svg>
             </button>
 
-            {/* Sleep Timer */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowSleepMenu(!showSleepMenu)}
-                className="p-2 rounded-lg transition-colors"
-                style={{ background: sleepTimer ? 'rgba(247,148,29,0.2)' : 'rgba(255,255,255,0.1)' }}
-              >
-                <svg className="w-5 h-5" style={{ color: sleepTimer ? '#F7941D' : 'rgba(255,255,255,0.6)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              </button>
-              {showSleepMenu && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 rounded-lg shadow-lg" style={{ background: '#2A2A2A', minWidth: '120px' }}>
-                  {[15, 30, 45, 60, null].map((mins, i) => (
-                    <button 
-                      key={i}
-                      onClick={() => { setSleepTimer(mins); setShowSleepMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-sm rounded transition-colors hover:bg-white/10"
-                      style={{ color: sleepTimer === mins ? '#F7941D' : 'rgba(255,255,255,0.7)' }}
-                    >
-                      {mins ? `${mins} min` : 'Off'}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Volume */}
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.6)' }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
               </svg>
-              <input
+              <Input
                 type="range"
                 min={0}
                 max={100}
@@ -318,10 +342,9 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
           </div>
         </div>
 
-        {/* Chapters Sidebar */}
         {showChapters && (
           <div 
-            className="fixed right-0 top-0 bottom-0 w-80 overflow-y-auto border-l"
+            className="fixed right-0 top-0 bottom-0 w-80 overflow-y-auto border-l z-20"
             style={{ background: '#1A1A1A', borderColor: 'rgba(255,255,255,0.1)' }}
           >
             <div className="p-6">
@@ -334,7 +357,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
                 </button>
               </div>
               <div className="space-y-1">
-                {content.chapters.map((chapter, index) => (
+                {audiobookChapters.length > 0 ? audiobookChapters.map((chapter, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentChapter(index)}
@@ -360,10 +383,11 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
                       </div>
                     </div>
                   </button>
-                ))}
+                )) : (
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>No chapters available.</p>    
+                )}
               </div>
 
-              {/* Bookmarks Section */}
               {bookmarks.length > 0 && (
                 <div className="mt-8">
                   <h3 className="font-serif text-lg font-bold text-white mb-4">Bookmarks</h3>
@@ -371,7 +395,7 @@ export default function Listen({ params }: { params: Promise<PageParams> }) {
                     {bookmarks.map((bm, index) => (
                       <button
                         key={index}
-                        onClick={() => setCurrentTime(bm)}
+                        onClick={() => handleSeek(bm)}
                         className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-white/5"
                       >
                         <svg className="w-4 h-4" style={{ color: '#F7941D' }} fill="currentColor" viewBox="0 0 20 20">

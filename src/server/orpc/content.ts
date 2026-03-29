@@ -202,6 +202,7 @@ export const contentRouter = {
         narrator: audiobooks.narrator,
         duration: audiobooks.duration,
         cover: audiobooks.cover,
+        audio: audiobooks.audio,
         description: audiobooks.description,
         releaseDate: audiobooks.releaseDate,
         language: audiobooks.language,
@@ -266,8 +267,10 @@ export const contentRouter = {
     if (podcast[0]) {
       const episodes = await db
         .select({
+          id: podcastEpisodes.id,
           title: podcastEpisodes.title,
           duration: podcastEpisodes.duration,
+          audio: podcastEpisodes.audio,
           date: podcastEpisodes.date,
         })
         .from(podcastEpisodes)
