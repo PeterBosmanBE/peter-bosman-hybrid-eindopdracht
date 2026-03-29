@@ -10,7 +10,7 @@ module.exports = {
         protocol: 'https',
         hostname: 'nrojpvs9hbuillom.public.blob.vercel-storage.com',
         port: '',
-        pathname: '/uploads/**',
+        pathname: '/**',
       },
       {
         protocol: 'https',

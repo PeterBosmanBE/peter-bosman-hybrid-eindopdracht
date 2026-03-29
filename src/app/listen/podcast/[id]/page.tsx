@@ -6,19 +6,18 @@ import Logo from '@/src/components/ui/logo';
 import { orpc } from '@/src/server/orpc/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/src/components/ui/input';
-import { Button } from '@/src/components/ui/button';
 
 type PageParams = { id: string };
 
-export default function ListenAudiobook({ params }: { params: Promise<PageParams> }) {
+export default function ListenPodcast({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
   
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
-  const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "audiobook" } }));
+  const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "podcast" } }));
   const content = data?.content;
-  const audioUrl = content?.type === 'audiobook' ? content.audio : undefined;
-  const audiobookChapters = content?.type === 'audiobook' ? content.chapters : [];
+  const isPodcast = content?.type === 'podcast';
+  const podcastEpisodes = isPodcast ? content.episodes : [];
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -28,7 +27,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
-  const [currentChapter, setCurrentChapter] = useState(0);
+  const [currentEpisode, setCurrentEpisode] = useState(0);
   const [localBookmarks, setLocalBookmarks] = useState<number[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -37,13 +36,16 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
     ...localBookmarks
   ])).sort((a, b) => a - b);
 
+  // Derive audio url from the current episode
+  const currentAudioUrl = podcastEpisodes[currentEpisode]?.audio || '';
+
   useEffect(() => {
-    if (!audioUrl) return;
+    if (!currentAudioUrl) return;
     
     if (!audioRef.current) {
-        audioRef.current = new Audio(audioUrl);
-    } else if (audioRef.current.src !== audioUrl) {
-        audioRef.current.src = audioUrl;
+        audioRef.current = new Audio(currentAudioUrl);
+    } else if (audioRef.current.src !== currentAudioUrl) {
+        audioRef.current.src = currentAudioUrl;
     }
     
     const audio = audioRef.current;
@@ -57,6 +59,11 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
     }
     const setAudioEnd = () => {
         setIsPlaying(false);
+        // Autoplay next episode?
+        if (podcastEpisodes.length && currentEpisode < podcastEpisodes.length - 1) {
+            setCurrentEpisode(prev => prev + 1);
+            setIsPlaying(true);
+        }
     }
     
     audio.addEventListener('loadedmetadata', setAudioData);
@@ -68,7 +75,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
         audio.removeEventListener('timeupdate', setAudioTime);
         audio.removeEventListener('ended', setAudioEnd);
     }
-  }, [audioUrl]);
+  }, [currentAudioUrl, podcastEpisodes, currentEpisode]);
 
   // Clean up audio on unmount
   useEffect(() => {
@@ -88,7 +95,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
             audioRef.current.pause();
         }
     }
-  }, [isPlaying, isReady]);
+  }, [isPlaying, isReady, currentAudioUrl]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -137,7 +144,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
       onSuccess: () => {
         // Refetch bookmarks after a new one is added
         queryClient.invalidateQueries({
-          queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: id, contentType: "audiobook" } })
+          queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: id, contentType: "podcast" } })
         });
       }
     })
@@ -149,7 +156,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
       setLocalBookmarks(prev => [...prev, current]);
       addBookmarkMutation.mutate({
         contentId: id,
-        contentType: "audiobook",
+        contentType: "podcast",
         positionSeconds: current,
         title: `Bookmark at ${formatTime(currentTime)}`
       });
@@ -160,10 +167,12 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-4" style={{ background: '#121212' }}>
          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-         <p className="text-white text-lg">Loading audiobook...</p>
+         <p className="text-white text-lg">Loading podcast...</p>
       </div>
     );
   }
+
+  const episode = podcastEpisodes[currentEpisode];
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#121212', fontFamily: "'Source Sans 3', sans-serif" }}>
@@ -184,7 +193,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
-          Chapters
+          Episodes
         </button>
       </nav>
 
@@ -202,16 +211,13 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
 
           <div className="text-center mb-8">
             <h1 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{content.title}</h1>
-            <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>{content.author}</p>
-            {content.narrator && (
-              <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Narrated by {content.narrator}</p>
-            )}
+            <p className="text-lg mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>{content.author}</p>
           </div>
 
-          {audiobookChapters.length > 0 && (
+          {episode && (
             <div className="text-center mb-6">
                 <p className="text-sm font-semibold" style={{ color: '#F7941D' }}>
-                Chapter {currentChapter + 1}: {audiobookChapters[currentChapter]?.title || 'Chapter'}
+                Currently Playing: {episode.title}
                 </p>
             </div>
           )}
@@ -262,7 +268,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.max(0, currentChapter - 1))}
+              onClick={() => setCurrentEpisode(Math.max(0, currentEpisode - 1))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -288,7 +294,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.min((audiobookChapters.length || 1) - 1, currentChapter + 1))}
+              onClick={() => setCurrentEpisode(Math.min((podcastEpisodes.length || 1) - 1, currentEpisode + 1))}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -335,7 +341,6 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
               </svg>
             </button>
 
-
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.6)' }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
@@ -360,7 +365,7 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-serif text-lg font-bold text-white">Chapters</h3>
+                <h3 className="font-serif text-lg font-bold text-white">Episodes</h3>
                 <button onClick={() => setShowChapters(false)} className="p-1">
                   <svg className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -368,34 +373,37 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
                 </button>
               </div>
               <div className="space-y-1">
-                {audiobookChapters.length > 0 ? audiobookChapters.map((chapter, index) => (
+                {podcastEpisodes.length > 0 ? podcastEpisodes.map((ep, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentChapter(index)}
-                    className={`w-full text-left p-4 rounded-lg transition-colors ${currentChapter === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                    onClick={() => {
+                        setCurrentEpisode(index);
+                        setIsPlaying(true);
+                    }}
+                    className={`w-full text-left p-4 rounded-lg transition-colors ${currentEpisode === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-3">
-                      {currentChapter === index && isPlaying ? (
+                      {currentEpisode === index && isPlaying ? (
                         <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#F7941D' }}>
                           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </div>
                       ) : (
-                        <span className="w-6 h-6 text-sm font-semibold flex items-center justify-center" style={{ color: currentChapter === index ? '#F7941D' : 'rgba(255,255,255,0.4)' }}>
+                        <span className="w-6 h-6 text-sm font-semibold flex items-center justify-center" style={{ color: currentEpisode === index ? '#F7941D' : 'rgba(255,255,255,0.4)' }}>
                           {index + 1}
                         </span>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold truncate ${currentChapter === index ? 'text-white' : ''}`} style={{ color: currentChapter === index ? 'white' : 'rgba(255,255,255,0.7)' }}>
-                          {chapter.title}
+                        <p className={`text-sm font-semibold truncate ${currentEpisode === index ? 'text-white' : ''}`} style={{ color: currentEpisode === index ? 'white' : 'rgba(255,255,255,0.7)' }}>
+                          {ep.title}
                         </p>
-                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{chapter.duration}</p>
+                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{ep.duration}</p>
                       </div>
                     </div>
                   </button>
                 )) : (
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>No chapters available.</p>    
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>No episodes available.</p>    
                 )}
               </div>
 

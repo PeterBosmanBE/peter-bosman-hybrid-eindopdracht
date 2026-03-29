@@ -1,9 +1,10 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index, date } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, date, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  bio: text("bio"),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
@@ -13,6 +14,21 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export const bookmarks = pgTable(
+  "bookmarks",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    contentId: text("content_id").notNull(),
+    contentType: text("content_type").notNull(),
+    positionSeconds: integer("position_seconds").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("bookmarks_userId_idx").on(table.userId)]
+);
 
 export const session = pgTable(
   "session",
@@ -152,6 +168,14 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   audiobooks: many(audiobooks),
   podcasts: many(podcasts),
+  bookmarks: many(bookmarks),
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
+  user: one(user, {
+    fields: [bookmarks.userId],
+    references: [user.id],
+  }),
 }));
 
 export const audiobooksRelations = relations(audiobooks, ({ one, many }) => ({

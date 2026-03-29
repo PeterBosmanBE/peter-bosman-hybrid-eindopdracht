@@ -16,11 +16,13 @@ import { orpc } from "@/src/server/orpc/client";
 
 export default function CreateShow({
   setCreateOpen,
+  goToUploadTab,
 }: {
   setCreateOpen: (open: boolean) => void;
+  goToUploadTab?: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: session, isPending: isSessionPending } =
+  const { data: session } =
     authClient.useSession();
 
   const [newType, setNewType] = useState<NewContentType>("podcast");
@@ -118,71 +120,83 @@ export default function CreateShow({
           </Button>
         </div>
 
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <p
-              className="text-xs font-semibold uppercase"
-              style={{ color: "#666666" }}
-            >
-              Title
-            </p>
-            <Input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder={
-                newType === "podcast" ? "Podcast title" : "Audiobook title"
-              }
-            />
-          </div>
+        {newType === "podcast" ? (
+          <>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <p
+                  className="text-xs font-semibold uppercase"
+                  style={{ color: "#666666" }}
+                >
+                  Title
+                </p>
+                <Input
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="Podcast title"
+                />
+              </div>
 
-          <div className="space-y-1">
-            <p
-              className="text-xs font-semibold uppercase"
-              style={{ color: "#666666" }}
-            >
-              Category
-            </p>
-            <Input
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="General"
-            />
-          </div>
+              <div className="space-y-1">
+                <p
+                  className="text-xs font-semibold uppercase"
+                  style={{ color: "#666666" }}
+                >
+                  Category
+                </p>
+                <Input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="General"
+                />
+              </div>
 
-          <div className="space-y-1">
-            <p
-              className="text-xs font-semibold uppercase"
-              style={{ color: "#666666" }}
-            >
-              Description
-            </p>
-            <Textarea
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Short description"
-              rows={3}
-            />
-          </div>
-        </div>
+              <div className="space-y-1">
+                <p
+                  className="text-xs font-semibold uppercase"
+                  style={{ color: "#666666" }}
+                >
+                  Description
+                </p>
+                <Textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Short description"
+                  rows={3}
+                />
+              </div>
+            </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setCreateOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="w-full"
-            disabled={!canCreate || isCreating}
-            onClick={handleCreateContent}
-          >
-            {isCreating
-              ? "Creating..."
-              : `Create ${newType === "podcast" ? "Podcast" : "Audiobook"}`}
-          </Button>
-        </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setCreateOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="w-full"
+                disabled={!canCreate || isCreating}
+                onClick={handleCreateContent}
+              >
+                {isCreating ? "Creating..." : "Create Podcast"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-4 py-6 text-center">
+            <Button
+              className="w-full"
+              onClick={() => {
+                setCreateOpen(false);
+                goToUploadTab?.();
+              }}
+            >
+              Go to Upload
+            </Button>
+          </div>
+        )}
       </div>
     </DialogContent>
   );

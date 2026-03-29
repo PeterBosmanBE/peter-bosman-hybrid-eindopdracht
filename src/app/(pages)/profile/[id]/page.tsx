@@ -44,6 +44,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-2">
               {userProfile.name}
             </h1>
+            
+            {userProfile.bio && (
+              <p className="text-gray-600 mb-4 max-w-2xl mx-auto sm:mx-0 break-words">
+                {userProfile.bio}
+              </p>
+            )}
+
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-sm text-gray-600 font-medium">
               <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-full">
                 <CalendarDays size={16} />

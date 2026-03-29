@@ -7,7 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Icons } from "./icons";
 
-export function Dropzone() {
+export function Dropzone({ onFileSelected }: { onFileSelected?: (files: File[]) => void }) {
   const uploadMutation = useMutation(
     orpc.uploads.create.mutationOptions({
       onSuccess: () => {
@@ -21,10 +21,14 @@ export function Dropzone() {
   );
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach((file) => {
-      uploadMutation.mutate(file);
-    });
-  }, [uploadMutation]);
+    if (onFileSelected) {
+      onFileSelected(acceptedFiles);
+    } else {
+      acceptedFiles.forEach((file) => {
+        uploadMutation.mutate(file);
+      });
+    }
+  }, [uploadMutation, onFileSelected]);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
   });

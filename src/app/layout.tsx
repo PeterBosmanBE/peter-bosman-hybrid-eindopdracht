@@ -14,8 +14,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chapter",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL!),
+  title: {
+    default: "Chapter",
+    template: "%s - Chapter",
+  },
   description: "Chapter is a audiobook & podcast website.",
+  openGraph: {
+    title: "Chapter",
+    description: "Chapter is a audiobook & podcast website.",
+    siteName: "Chapter",
+    url: process.env.NEXT_PUBLIC_BASE_URL!,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Chapter",
+    description: "Chapter is an audiobook & podcast website.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

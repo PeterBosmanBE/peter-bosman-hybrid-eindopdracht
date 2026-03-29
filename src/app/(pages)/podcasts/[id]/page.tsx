@@ -114,7 +114,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
 
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href={`/listen/${id}`}
+                  href={`/listen/podcast/${id}`}
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold transition-all hover:opacity-90"
                   style={{ background: '#F7941D', color: 'white' }}
                 >
@@ -203,7 +203,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                     listItems.map((item, index) => (
                       <Link
                         key={`${item.title}-${index}`}
-                        href={`/listen/${id}`}
+                        href={`/listen/podcast/${id}`}
                         className="flex items-center justify-between p-4 rounded-lg transition-colors hover:bg-white group"
                         style={{ background: '#FAFAF8' }}
                       >
