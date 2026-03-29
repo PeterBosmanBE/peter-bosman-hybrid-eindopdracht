@@ -14,6 +14,7 @@ import { authClient } from "@/src/server/auth/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Progress } from "@/src/components/ui/progress";
+import { upload } from "@vercel/blob/client";
 
 type AudioType = "podcast" | "audiobook" | null;
 
@@ -140,15 +141,19 @@ export default function Upload() {
 
       if (data.file) {
         toast.info("Uploading audio...");
-        const res = await client.uploads.create(data.file);
-        audioUrl = res.url;
-        setUploadProgress(50);
+        const newBlob = await upload(data.file.name, data.file, {
+          access: "public",
+          handleUploadUrl: "/api/client-upload",
+          onUploadProgress: (progressEvent) => {
+            setUploadProgress(progressEvent.percentage);
+          },
+        });
+        audioUrl = newBlob.url;
       }
 
       if (data.thumbnail) {
         toast.info("Uploading thumbnail...");
-        const res = await client.uploads.create(data.thumbnail);
-        coverUrl = res.url;
+        coverUrl = newBlob.url;
       }
       setUploadProgress(100);
 
