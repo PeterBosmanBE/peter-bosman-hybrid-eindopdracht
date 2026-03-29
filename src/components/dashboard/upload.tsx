@@ -9,7 +9,7 @@ import { Dropzone } from "../dropzone";
 import { Icons } from "@/src/components/icons";
 import Image from "next/image";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { orpc } from "@/src/server/orpc/client";
+import { orpc, client } from "@/src/server/orpc/client";
 import { authClient } from "@/src/server/auth/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -153,10 +153,6 @@ export default function Upload() {
 
       if (data.thumbnail) {
         toast.info("Uploading thumbnail...");
-        const newBlob = await upload(data.thumbnail.name, data.thumbnail, {
-          access: "public",
-          handleUploadUrl: "/api/client-upload",
-        });
         coverUrl = newBlob.url;
       }
       setUploadProgress(100);
