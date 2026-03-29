@@ -9,11 +9,10 @@ import { Dropzone } from "../dropzone";
 import { Icons } from "@/src/components/icons";
 import Image from "next/image";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { orpc } from "@/src/server/orpc/client";
+import { orpc, client } from "@/src/server/orpc/client";
 import { authClient } from "@/src/server/auth/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import axios from "axios";
 import { Progress } from "@/src/components/ui/progress";
 
 type AudioType = "podcast" | "audiobook" | null;
@@ -142,37 +141,17 @@ export default function Upload() {
 
       if (data.file) {
         toast.info("Uploading audio...");
-        const formData = new FormData();
-        formData.append("file", data.file);
-        
-        const res = await axios.post("/api/upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(percentCompleted);
-            }
-          },
-        });
-        audioUrl = res.data.url;
+        const res = await client.uploads.create(data.file);
+        audioUrl = res.url;
+        setUploadProgress(50);
       }
 
       if (data.thumbnail) {
         toast.info("Uploading thumbnail...");
-        const formData = new FormData();
-        formData.append("file", data.thumbnail);
-        
-        const res = await axios.post("/api/upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        coverUrl = res.data.url;
+        const res = await client.uploads.create(data.thumbnail);
+        coverUrl = res.url;
       }
+      setUploadProgress(100);
 
       if (data.audioType === "podcast" && data.podcastId) {
         await createPodcastMutation.mutateAsync({

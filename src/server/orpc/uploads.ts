@@ -1,8 +1,6 @@
-import { db } from "@/src/server/db/client";
 import { os } from "@orpc/server";
 import { put } from "@vercel/blob";
 import * as z from "zod";
-import { desc } from "drizzle-orm";
 
 export const uploadsRouter = {
   create: os.input(z.any()).handler(async ({ input }) => {
