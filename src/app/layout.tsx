@@ -14,8 +14,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chapter",
+  metadataBase: new URL("https://chapter.peterbosman.be"),
+  title: {
+    default: "Chapter",
+    template: "%s | Chapter",
+  },
   description: "Chapter is a audiobook & podcast website.",
+  openGraph: {
+    title: "Chapter",
+    description: "Chapter is a audiobook & podcast website.",
+    siteName: "Chapter",
+    url: "https://chapter.peterbosman.be",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Chapter",
+    description: "Chapter is an audiobook & podcast website.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
