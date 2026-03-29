@@ -8,15 +8,18 @@ import { Button } from "../ui/button";
 interface SidebarProps {
   activeTab: DashboardTabType;
   onTabChange: (tab: DashboardTabType) => void;
+  isOpen?: boolean;
 }
 
-export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+export default function Sidebar({ activeTab, onTabChange, isOpen = false }: SidebarProps) {
   const { data: session } = authClient.useSession();
   const username = session?.user?.name || "User";
   return (
     <aside 
-        className="fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-transform lg:translate-x-0 -translate-x-full bg-tertiary"
-      >
+      className={`fixed lg:static inset-y-0 left-0 z-40 w-64 transform transition-transform lg:translate-x-0 bg-tertiary ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">

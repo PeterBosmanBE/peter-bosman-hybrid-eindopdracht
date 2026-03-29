@@ -53,7 +53,7 @@ export default function Dashboard() {
     type: 'audiobook',
     category: 'Business',
   });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const maxListeners = Math.max(...weeklyData.map(d => d.listeners));
 
@@ -90,8 +90,23 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex" style={{ background: '#FAFAF8' }}>
 
+      {/* Mobile Backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setSidebarOpen(false);
+        }} 
+        isOpen={sidebarOpen} 
+      />
 
       {/* Mobile Menu Toggle */}
       <Button 
