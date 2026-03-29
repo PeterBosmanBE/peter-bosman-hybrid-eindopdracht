@@ -1,6 +1,5 @@
-"use client";
-import { redirect } from "next/navigation";
+import RedirectPage from "@/src/components/redirect-home";
 
 export default function NoProfilePage() {
-  return redirect("/");
+  return <RedirectPage />;
 }
