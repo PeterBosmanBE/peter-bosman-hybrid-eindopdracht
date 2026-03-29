@@ -4,7 +4,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import Logo from '@/src/components/ui/logo';
 import { orpc } from '@/src/server/orpc/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/src/components/ui/input';
 
 type PageParams = { id: string };
@@ -12,7 +12,9 @@ type PageParams = { id: string };
 export default function ListenPodcast({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
   
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
+  const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "podcast" } }));
   const content = data?.content;
   const isPodcast = content?.type === 'podcast';
   const podcastEpisodes = isPodcast ? content.episodes : [];
@@ -26,10 +28,13 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
   const [currentEpisode, setCurrentEpisode] = useState(0);
-  const [sleepTimer, setSleepTimer] = useState<number | null>(null);
-  const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [localBookmarks, setLocalBookmarks] = useState<number[]>([]);
   const [isReady, setIsReady] = useState(false);
+
+  const bookmarks = Array.from(new Set([
+    ...(dbBookmarks?.map(b => b.positionSeconds) || []), 
+    ...localBookmarks
+  ])).sort((a, b) => a - b);
 
   // Derive audio url from the current episode
   const currentAudioUrl = podcastEpisodes[currentEpisode]?.audio || '';
@@ -104,18 +109,6 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
     }
   }, [volume]);
 
-  // Sleep timer logic
-  useEffect(() => {
-    if (sleepTimer === null || !isPlaying) return;
-    
-    const timeout = setTimeout(() => {
-      setIsPlaying(false);
-      setSleepTimer(null);
-    }, sleepTimer * 60 * 1000);
-    
-    return () => clearTimeout(timeout);
-  }, [sleepTimer, isPlaying]);
-
   const handleSeek = (newTime: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = newTime;
@@ -146,9 +139,27 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
 
   const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
+  const addBookmarkMutation = useMutation(
+    orpc.bookmarks.addBookmark.mutationOptions({
+      onSuccess: () => {
+        // Refetch bookmarks after a new one is added
+        queryClient.invalidateQueries({
+          queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: id, contentType: "podcast" } })
+        });
+      }
+    })
+  );
+
   const addBookmark = () => {
-    if (!bookmarks.includes(currentTime)) {
-      setBookmarks([...bookmarks, currentTime].sort((a, b) => a - b));
+    const current = Math.floor(currentTime);
+    if (!bookmarks.includes(current)) {
+      setLocalBookmarks(prev => [...prev, current]);
+      addBookmarkMutation.mutate({
+        contentId: id,
+        contentType: "podcast",
+        positionSeconds: current,
+        title: `Bookmark at ${formatTime(currentTime)}`
+      });
     }
   };
 
@@ -329,32 +340,6 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
             </button>
-
-            <div className="relative">
-              <button 
-                onClick={() => setShowSleepMenu(!showSleepMenu)}
-                className="p-2 rounded-lg transition-colors"
-                style={{ background: sleepTimer ? 'rgba(247,148,29,0.2)' : 'rgba(255,255,255,0.1)' }}
-              >
-                <svg className="w-5 h-5" style={{ color: sleepTimer ? '#F7941D' : 'rgba(255,255,255,0.6)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              </button>
-              {showSleepMenu && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 rounded-lg shadow-lg" style={{ background: '#2A2A2A', minWidth: '120px' }}>
-                  {[15, 30, 45, 60, null].map((mins, i) => (
-                    <button 
-                      key={i}
-                      onClick={() => { setSleepTimer(mins); setShowSleepMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-sm rounded transition-colors hover:bg-white/10"
-                      style={{ color: sleepTimer === mins ? '#F7941D' : 'rgba(255,255,255,0.7)' }}
-                    >
-                      {mins ? `${mins} min` : 'Off'}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.6)' }} fill="currentColor" viewBox="0 0 24 24">

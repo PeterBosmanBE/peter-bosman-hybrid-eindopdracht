@@ -4,7 +4,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import Logo from '@/src/components/ui/logo';
 import { orpc } from '@/src/server/orpc/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 
@@ -13,7 +13,9 @@ type PageParams = { id: string };
 export default function ListenAudiobook({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
   
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
+  const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "audiobook" } }));
   const content = data?.content;
   const audioUrl = content?.type === 'audiobook' ? content.audio : undefined;
   const audiobookChapters = content?.type === 'audiobook' ? content.chapters : [];
@@ -27,10 +29,13 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
   const [currentChapter, setCurrentChapter] = useState(0);
-  const [sleepTimer, setSleepTimer] = useState<number | null>(null);
-  const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [localBookmarks, setLocalBookmarks] = useState<number[]>([]);
   const [isReady, setIsReady] = useState(false);
+
+  const bookmarks = Array.from(new Set([
+    ...(dbBookmarks?.map(b => b.positionSeconds) || []), 
+    ...localBookmarks
+  ])).sort((a, b) => a - b);
 
   useEffect(() => {
     if (!audioUrl) return;
@@ -97,18 +102,6 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
     }
   }, [volume]);
 
-  // Sleep timer logic
-  useEffect(() => {
-    if (sleepTimer === null || !isPlaying) return;
-    
-    const timeout = setTimeout(() => {
-      setIsPlaying(false);
-      setSleepTimer(null);
-    }, sleepTimer * 60 * 1000);
-    
-    return () => clearTimeout(timeout);
-  }, [sleepTimer, isPlaying]);
-
   const handleSeek = (newTime: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = newTime;
@@ -139,9 +132,27 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
 
   const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
+  const addBookmarkMutation = useMutation(
+    orpc.bookmarks.addBookmark.mutationOptions({
+      onSuccess: () => {
+        // Refetch bookmarks after a new one is added
+        queryClient.invalidateQueries({
+          queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: id, contentType: "audiobook" } })
+        });
+      }
+    })
+  );
+
   const addBookmark = () => {
-    if (!bookmarks.includes(currentTime)) {
-      setBookmarks([...bookmarks, currentTime].sort((a, b) => a - b));
+    const current = Math.floor(currentTime);
+    if (!bookmarks.includes(current)) {
+      setLocalBookmarks(prev => [...prev, current]);
+      addBookmarkMutation.mutate({
+        contentId: id,
+        contentType: "audiobook",
+        positionSeconds: current,
+        title: `Bookmark at ${formatTime(currentTime)}`
+      });
     }
   };
 
