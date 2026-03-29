@@ -1,18 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { myContent } from '@/src/lib/test-data';
-import { Dropzone } from '@/src/components/dropzone';
 import Sidebar from '@/src/components/layout/sidebar';
 import Content from '@/src/components/dashboard/content';
 import { DashboardTabType } from '@/src/types/DashboardTabType';
-import UploadPage from './upload/page';
-import { Input } from '@/src/components/ui/input';
-import { Label } from '@/src/components/ui/label';
-import { Textarea } from '@/src/components/ui/textarea';
+import Upload from '@/src/components/dashboard/upload';
 import { Button } from '@/src/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import Profile from '@/src/components/dashboard/profile';
 
 const stats = [
@@ -41,36 +35,11 @@ const weeklyData = [
   { day: 'Sun', listeners: 450 },
 ];
 
-const categories = ['Business', 'Self-Help', 'Fiction', 'History', 'Science', 'Biography'];
-
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<DashboardTabType>('overview');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadForm, setUploadForm] = useState({
-    title: '',
-    description: '',
-    type: 'audiobook',
-    category: 'Business',
-  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const maxListeners = Math.max(...weeklyData.map(d => d.listeners));
-
-  const handleUpload = () => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 500);
-  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -132,7 +101,6 @@ export default function Dashboard() {
                 {activeTab === 'analytics' && 'Analytics'}
                 {activeTab === 'profile' && 'Profile'}
               </h1>
-              <p className="text-sm" style={{ color: '#666666' }}>Welcome back, John</p>
             </div>
             <div className="flex items-center gap-3">
               <Button className="w-10 h-10 rounded-full flex items-center justify-center border transition-colors hover:bg-gray-50" style={{ borderColor: '#E8E8E8' }}>
@@ -302,170 +270,20 @@ export default function Dashboard() {
 
           {/* Upload Tab */}
           {activeTab === 'upload' && (
-            <div className="max-w-2xl mx-auto">
-              <div className="rounded-xl p-8" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-                <h3 className="font-serif text-xl font-bold mb-6" style={{ color: '#232F3E' }}>Upload New Content</h3>
-                
-                <div className="space-y-6">
-                  {/* File Upload */}
-                  <div>
-                    <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Audio File</Label>
-                    <Dropzone/>
-                  </div>
-
-                  {/* Title */}
-                  <div>
-                    <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Title</Label>
-                    <Input
-                      type="text"
-                      value={uploadForm.title}
-                      onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-                      placeholder="Enter title..."
-                      className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400"
-                      style={{ borderColor: '#E8E8E8' }}
-                    />
-                  </div>
-
-                  {/* Type & Category */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Type</Label>
-                      <Select
-                        value={uploadForm.type}
-                        onValueChange={(value) => setUploadForm({ ...uploadForm, type: value })}
-                      >
-                        <SelectTrigger className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400 bg-transparent" style={{ borderColor: '#E8E8E8' }}>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="audiobook">Audiobook</SelectItem>
-                          <SelectItem value="podcast">Podcast Episode</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Category</Label>
-                      <Select
-                        value={uploadForm.category}
-                        onValueChange={(value) => setUploadForm({ ...uploadForm, category: value })}
-                      >
-                        <SelectTrigger className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400 bg-transparent" style={{ borderColor: '#E8E8E8' }}>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <Label className="block text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Description</Label>
-                    <Textarea
-                      value={uploadForm.description}
-                      onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                      placeholder="Describe your content..."
-                      rows={4}
-                      className="w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:border-orange-400 resize-none"
-                      style={{ borderColor: '#E8E8E8' }}
-                    />
-                  </div>
-
-                  {/* Submit */}
-                  <Button 
-                    onClick={handleUpload}
-                    disabled={isUploading}
-                    className="w-full py-3.5 rounded-lg font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                    style={{ background: '#F7941D', color: 'white' }}
-                  >
-                    {isUploading ? 'Uploading...' : 'Upload Content'}
-                  </Button>
-                </div>
-              </div>
+            <div>
+              <Upload />
             </div>
           )}
 
           {/* Analytics Tab */}
           {activeTab === 'analytics' && (
             <div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {[
-                  { label: 'Total Plays', value: '89,234', trend: '+18%' },
-                  { label: 'Unique Listeners', value: '12,847', trend: '+12%' },
-                  { label: 'Completion Rate', value: '67%', trend: '+5%' },
-                  { label: 'Avg. Session', value: '32 min', trend: '+8%' },
-                ].map((stat, index) => (
-                  <div key={index} className="p-5 rounded-xl" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-                    <p className="text-sm mb-1" style={{ color: '#666666' }}>{stat.label}</p>
-                    <div className="flex items-end gap-2">
-                      <p className="font-serif text-2xl font-bold" style={{ color: '#232F3E' }}>{stat.value}</p>
-                      <span className="text-xs font-semibold mb-1 px-1.5 py-0.5 rounded" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}>{stat.trend}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-6">
-                {/* Top Content */}
-                <div className="p-6 rounded-xl" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-                  <h3 className="font-serif text-lg font-bold mb-4" style={{ color: '#232F3E'}}>Top Performing Content</h3>
-                  <div className="space-y-4">
-                    {myContent.filter(c => c.status === 'published').map((item, index) => (
-                      <div key={item.id} className="flex items-center gap-4">
-                        <span className="text-lg font-bold" style={{ color: '#F7941D' }}>#{index + 1}</span>
-                        <Image src={item.cover} alt={item.title} width={48} height={48} className="w-12 h-12 rounded-lg object-cover" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate" style={{ color: '#232F3E' }}>{item.title}</p>
-                          <p className="text-sm" style={{ color: '#666666' }}>{item.listeners.toLocaleString()} listeners</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4" style={{ color: '#F7941D' }} fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          <span className="text-sm font-semibold" style={{ color: '#232F3E' }}>Top</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Listener Demographics */}
-                <div className="p-6 rounded-xl" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-                  <h3 className="font-serif text-lg font-bold mb-4" style={{ color: '#232F3E' }}>Listener Demographics</h3>
-                  <div className="space-y-4">
-                    {[
-                      { label: '25-34', percentage: 35, color: '#F7941D' },
-                      { label: '35-44', percentage: 28, color: '#FF6B35' },
-                      { label: '18-24', percentage: 20, color: '#37475A' },
-                      { label: '45-54', percentage: 12, color: '#999999' },
-                      { label: '55+', percentage: 5, color: '#CCCCCC' },
-                    ].map((item, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span style={{ color: '#232F3E' }}>{item.label}</span>
-                          <span style={{ color: '#666666' }}>{item.percentage}%</span>
-                        </div>
-                        <div className="h-2 rounded-full" style={{ background: '#E8E8E8' }}>
-                          <div className="h-full rounded-full" style={{ width: `${item.percentage}%`, background: item.color }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <Content />
             </div>
           )}
           {activeTab === 'profile' && (
             <div>
               <Profile />
-            </div>
-          )}
-          {activeTab === 'test2' && (
-            <div>
-              <UploadPage />
             </div>
           )}
         </div>

@@ -110,14 +110,9 @@ export default function Profile() {
 
   return (
     <div className="max-w-2xl mx-auto md:py-6 animate-in fade-in duration-300">
-      <h1 className="text-2xl font-bold mb-6" style={{ color: "#232F3E" }}>
-        Edit Profile
-      </h1>
+      <h1 className="text-2xl font-bold mb-6 text-tertiary">Edit Profile</h1>
 
-      <div
-        className="space-y-6 bg-white p-6 rounded-xl border"
-        style={{ borderColor: "#E8E8E8" }}
-      >
+      <div className="space-y-6 bg-white p-6 rounded-xl border border-nav-border">
         <p className="text-sm text-gray-500 mb-6">
           Update your public profile details. Changes will be reflected across
           your creator page.
@@ -125,10 +120,7 @@ export default function Profile() {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
           {/* Avatar preview */}
-          <div
-            className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border bg-[#FAFAF8]"
-            style={{ borderColor: "#E8E8E8" }}
-          >
+          <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border bg-[#FAFAF8] border-nav-border">
             {image && !errors.image ? (
               <Image
                 width={100}
@@ -187,26 +179,15 @@ export default function Profile() {
 
         {/* Connected Accounts Section */}
         {providers.length > 0 && (
-          <div
-            className="mb-6 p-4 rounded-lg"
-            style={{ background: "#FAFAF8", border: "1px solid #E8E8E8" }}
-          >
-            <p
-              className="text-sm font-semibold mb-2"
-              style={{ color: "#232F3E" }}
-            >
+          <div className="mb-6 p-4 rounded-lg border border-nav-border bg-[#FAFAF8]">
+            <p className="text-sm font-semibold mb-2 text-[#232F3E}">
               Connected Accounts
             </p>
             <div className="flex flex-wrap gap-2">
               {providers.map((provider) => (
                 <span
                   key={provider}
-                  className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
-                  style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #E8E8E8",
-                    color: "#666666",
-                  }}
+                  className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full capitalize bg-white border border-nav-border text-[#666666]"
                 >
                   {provider}
                 </span>
@@ -215,10 +196,7 @@ export default function Profile() {
           </div>
         )}
 
-        <div
-          className="pt-4 flex justify-end gap-3 border-t mt-6"
-          style={{ borderColor: "#E8E8E8", paddingTop: "1.5rem" }}
-        >
+        <div className="pt-6 flex justify-end gap-3 border-t mt-6 border-nav-border">
           <Button
             variant="outline"
             onClick={() => {
