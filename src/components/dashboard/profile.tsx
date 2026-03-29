@@ -11,11 +11,24 @@ import { Label } from "../ui/label";
 import Image from "next/image";
 
 const profileSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(1, "Display name is required")
-    .regex(/^[\p{L}\p{N} ]+$/u, "Display name can only contain letters, numbers, and spaces. Emojis and special characters are not allowed."),
-  image: z.union([z.literal(""), z.string().url("Profile picture must be a valid URL.")]),
-  bio: z.string().optional()
+    .regex(
+      /^[\p{L}\p{N} ]+$/u,
+      "Display name can only contain letters, numbers, and spaces. Emojis and special characters are not allowed.",
+    ),
+  image: z.union([
+    z.literal(""),
+    z.string().url("Profile picture must be a valid URL."),
+  ]),
+  bio: z
+    .string()
+    .regex(
+      /^[\p{L}\p{N} ]+$/u,
+      "Display name can only contain letters, numbers, and spaces. Emojis and special characters are not allowed.",
+    )
+    .optional(),
 });
 
 export default function Profile() {
@@ -25,21 +38,29 @@ export default function Profile() {
   const [image, setImage] = useState("");
   const [bio, setBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState<{name?: string, image?: string}>({});
-  const [linkedAccounts, setLinkedAccounts] = useState<{ providerId: string }[]>([]);
+  const [errors, setErrors] = useState<{ name?: string; image?: string }>({});
+  const [linkedAccounts, setLinkedAccounts] = useState<
+    { providerId: string }[]
+  >([]);
 
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || "");
       setImage(session.user.image || "");
-      
+      setBio(session.user.bio || "");
+
       // Fetch user's connected accounts (e.g. Google, GitHub)
-      if (typeof authClient.listAccounts === 'function') {
-        authClient.listAccounts().then((res) => {
-          if (res?.data) {
-            setLinkedAccounts(res.data);
-          }
-        }).catch(err => console.error("Failed to fetch linked accounts:", err));
+      if (typeof authClient.listAccounts === "function") {
+        authClient
+          .listAccounts()
+          .then((res) => {
+            if (res?.data) {
+              setLinkedAccounts(res.data);
+            }
+          })
+          .catch((err) =>
+            console.error("Failed to fetch linked accounts:", err),
+          );
       }
     }
   }, [session]);
@@ -47,10 +68,10 @@ export default function Profile() {
   const handleSave = async () => {
     const result = profileSchema.safeParse({ name, image, bio });
     if (!result.success) {
-      const fieldErrors: {name?: string, image?: string} = {};
-      result.error.issues.forEach(err => {
-        if (err.path[0] === 'name') fieldErrors.name = err.message;
-        if (err.path[0] === 'image') fieldErrors.image = err.message;
+      const fieldErrors: { name?: string; image?: string } = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0] === "name") fieldErrors.name = err.message;
+        if (err.path[0] === "image") fieldErrors.image = err.message;
       });
       setErrors(fieldErrors);
       return;
@@ -62,9 +83,9 @@ export default function Profile() {
       await authClient.updateUser({
         name: result.data.name,
         image: result.data.image || undefined,
+        bio: result.data.bio || undefined,
       });
 
-      // Bio is mock for now since it's not in the db schema yet
       toast.success("Profile updated successfully!");
     } catch (e) {
       console.error(e);
@@ -83,7 +104,9 @@ export default function Profile() {
   }
 
   // Get unique provider IDs to display
-  const providers = Array.from(new Set(linkedAccounts.map(acc => acc.providerId)));
+  const providers = Array.from(
+    new Set(linkedAccounts.map((acc) => acc.providerId)),
+  );
 
   return (
     <div className="max-w-2xl mx-auto md:py-6 animate-in fade-in duration-300">
@@ -120,31 +143,6 @@ export default function Profile() {
               </div>
             )}
           </div>
-
-          <div className="flex-1 w-full space-y-1">
-            <Label
-              className="text-sm font-semibold uppercase"
-              style={{ color: "#666666" }}
-            >
-              Profile Picture URL
-            </Label>
-            <Input
-              value={image}
-              onChange={(e) => {
-                setImage(e.target.value);
-                setErrors(prev => ({...prev, image: undefined}));
-              }}
-              placeholder="https://..."
-              className={errors.image ? "border-red-500" : ""}
-            />
-            {errors.image ? (
-              <p className="text-xs mt-1 text-red-500">{errors.image}</p>
-            ) : (
-              <p className="text-xs mt-1" style={{ color: "#999999" }}>
-                Link an image URL to use as your avatar
-              </p>
-            )}
-          </div>
         </div>
 
         <div className="space-y-1 mt-6">
@@ -158,28 +156,27 @@ export default function Profile() {
             value={name}
             onChange={(e) => {
               setName(e.target.value);
-              setErrors(prev => ({...prev, name: undefined}));
+              setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             placeholder="Your name"
-            className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
+            className={
+              errors.name ? "border-red-500 focus-visible:ring-red-500" : ""
+            }
           />
           {errors.name && (
-            <p className="text-xs mt-1 text-red-500 font-medium">{errors.name}</p>
+            <p className="text-xs mt-1 text-red-500 font-medium">
+              {errors.name}
+            </p>
           )}
         </div>
 
         <div className="space-y-1">
-          <div className="flex justify-between items-center">
-            <Label
-              className="text-sm font-semibold uppercase"
-              style={{ color: "#666666" }}
-            >
-              Bio
-            </Label>
-            <span className="text-xs" style={{ color: "#999999" }}>
-              (Not synced to database yet)
-            </span>
-          </div>
+          <Label
+            className="text-sm font-semibold uppercase block mb-1"
+            style={{ color: "#666666" }}
+          >
+            Bio
+          </Label>
           <Textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -188,13 +185,29 @@ export default function Profile() {
           />
         </div>
 
-                {/* Connected Accounts Section */}
+        {/* Connected Accounts Section */}
         {providers.length > 0 && (
-          <div className="mb-6 p-4 rounded-lg" style={{ background: '#FAFAF8', border: '1px solid #E8E8E8' }}>
-            <p className="text-sm font-semibold mb-2" style={{ color: '#232F3E' }}>Connected Accounts</p>
+          <div
+            className="mb-6 p-4 rounded-lg"
+            style={{ background: "#FAFAF8", border: "1px solid #E8E8E8" }}
+          >
+            <p
+              className="text-sm font-semibold mb-2"
+              style={{ color: "#232F3E" }}
+            >
+              Connected Accounts
+            </p>
             <div className="flex flex-wrap gap-2">
-              {providers.map(provider => (
-                <span key={provider} className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full capitalize" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8', color: '#666666' }}>
+              {providers.map((provider) => (
+                <span
+                  key={provider}
+                  className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid #E8E8E8",
+                    color: "#666666",
+                  }}
+                >
                   {provider}
                 </span>
               ))}
@@ -211,7 +224,7 @@ export default function Profile() {
             onClick={() => {
               setName(session?.user?.name || "");
               setImage(session?.user?.image || "");
-              setBio("");
+              setBio(session?.user?.bio || "");
               setErrors({});
             }}
             disabled={isSaving}

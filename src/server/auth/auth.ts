@@ -8,6 +8,14 @@ export const auth = betterAuth({
         provider: "pg",
         schema,
     }),
+    user: {
+        additionalFields: {
+            bio: {
+                type: "string",
+                required: false,
+            },
+        },
+    },
     socialProviders: {
         github: { 
             clientId: process.env.GITHUB_CLIENT_ID as string, 
