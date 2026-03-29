@@ -43,8 +43,10 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
     <>
       {/* Create Show/Book Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <CreateShow setCreateOpen={setCreateOpen} />
-        {/* <CreateShow setCreateOpen={setCreateOpen} goToUploadTab={() => onTabChange?.('upload')} /> */}
+        <CreateShow
+          setCreateOpen={setCreateOpen}
+          goToUploadTab={() => onTabChange?.("upload")}
+        />
       </Dialog>
       <div>
         <div className="flex items-center justify-between mb-6">
@@ -147,6 +149,14 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
                                 </td>
                                 <td className="px-6 py-4 hidden md:table-cell">
                                   <span style={{ color: '#232F3E' }}>{formatReleaseDate(item.releaseDate)}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  {item.type === 'audiobook' && (
+                                      "audiobooks"
+                                  )}
+                                  {item.type === 'podcast' && (
+                                      "podcasts"
+                                  )}
                                 </td>
                               </tr>
                             ))}

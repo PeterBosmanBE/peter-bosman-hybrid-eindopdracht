@@ -98,7 +98,6 @@ export default function Dashboard() {
                 {activeTab === 'overview' && 'Dashboard'}
                 {activeTab === 'content' && 'My Content'}
                 {activeTab === 'upload' && 'Upload'}
-                {activeTab === 'analytics' && 'Analytics'}
                 {activeTab === 'profile' && 'Profile'}
               </h1>
             </div>
@@ -193,78 +192,7 @@ export default function Dashboard() {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: '#232F3E', color: 'white' }}>All</button>
-                  <button className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: '#F5F5F5', color: '#666666' }}>Audiobooks</button>
-                  <button className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: '#F5F5F5', color: '#666666' }}>Podcasts</button>
-                </div>
-                <button 
-                  onClick={() => setActiveTab('upload')}
-                  className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-                  style={{ background: '#F7941D', color: 'white' }}
-                >
-                  + New Upload
-                </button>
-              </div>
-
-              <div className="rounded-xl overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-                <table className="w-full">
-                  <thead>
-                    <tr style={{ background: '#F9F9F7' }}>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#666666' }}>Title</th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Type</th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Status</th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Listeners</th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#666666' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {myContent.map((item) => (
-                      <tr key={item.id} className="border-t" style={{ borderColor: '#E8E8E8' }}>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <img src={item.cover} alt={item.title} className="w-12 h-12 rounded-lg object-cover" />
-                            <div>
-                              <p className="font-semibold" style={{ color: '#232F3E' }}>{item.title}</p>
-                              <div className="flex items-center gap-1 md:hidden">
-                                <span className="text-xs px-2 py-0.5 rounded-full capitalize" style={{ background: item.status === 'published' ? 'rgba(16, 185, 129, 0.1)' : '#F5F5F5', color: item.status === 'published' ? '#10B981' : '#666666' }}>
-                                  {item.status}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 hidden md:table-cell">
-                          <span className="text-sm capitalize" style={{ color: '#666666' }}>{item.type}</span>
-                        </td>
-                        <td className="px-6 py-4 hidden md:table-cell">
-                          <span className="text-xs px-2 py-1 rounded-full capitalize font-semibold" style={{ background: item.status === 'published' ? 'rgba(16, 185, 129, 0.1)' : '#F5F5F5', color: item.status === 'published' ? '#10B981' : '#666666' }}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 hidden md:table-cell">
-                          <span style={{ color: '#232F3E' }}>{item.listeners.toLocaleString()}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button className="p-2 rounded-lg transition-colors hover:bg-gray-100" title="Edit">
-                              <svg className="w-4 h-4" style={{ color: '#666666' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                            <button className="p-2 rounded-lg transition-colors hover:bg-gray-100" title="Analytics">
-                              <svg className="w-4 h-4" style={{ color: '#666666' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Content onTabChange={setActiveTab} />
             </div>
           )}
 
@@ -275,12 +203,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Analytics Tab */}
-          {activeTab === 'analytics' && (
-            <div>
-              <Content />
-            </div>
-          )}
           {activeTab === 'profile' && (
             <div>
               <Profile />
