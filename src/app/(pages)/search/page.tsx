@@ -22,7 +22,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
 
-  const contentQuery = useQuery(orpc.content.list.queryOptions({ type: "all" }));
+  const contentQuery = useQuery(orpc.content.list.queryOptions({ input: { type: "all" } }));
 
   const items = useMemo(() => contentQuery.data?.items ?? [], [contentQuery.data?.items]);
 

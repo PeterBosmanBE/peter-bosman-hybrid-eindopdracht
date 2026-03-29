@@ -93,6 +93,29 @@ export const contentRouter = {
     return { id };
   }),
 
+  createPodcastEpisode: os.input(z.object({
+    podcastId: z.string().min(1),
+    title: z.string().min(1).max(200),
+    description: z.string().max(5000).optional(),
+    audio: z.string().url().optional(),
+    duration: z.string().max(50).optional(),
+  })).handler(async ({ input }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const id = crypto.randomUUID();
+
+    await db.insert(podcastEpisodes).values({
+      id,
+      podcastId: input.podcastId,
+      title: input.title,
+      duration: input.duration?.trim() || "00:00",
+      audio: input.audio || "",
+      description: input.description?.trim() || "",
+      date: today,
+    });
+
+    return { id };
+  }),
+
   list: os.input(listContentInput).handler(async ({ input }) => {
     const type = input?.type ?? "all";
 
@@ -100,31 +123,53 @@ export const contentRouter = {
     const shouldFetchPodcasts = type === "all" || type === "podcast";
 
     const audiobookRows = shouldFetchAudiobooks
-      ? await db
-          .select({
-            id: audiobooks.id,
-            title: audiobooks.title,
-            author: audiobooks.author,
-            duration: audiobooks.duration,
-            cover: audiobooks.cover,
-            releaseDate: audiobooks.releaseDate,
-          })
-          .from(audiobooks)
-          .orderBy(asc(audiobooks.title))
+      ? await (input?.userId
+          ? db.select({
+              id: audiobooks.id,
+              title: audiobooks.title,
+              author: audiobooks.author,
+              duration: audiobooks.duration,
+              cover: audiobooks.cover,
+              releaseDate: audiobooks.releaseDate,
+            })
+            .from(audiobooks)
+            .where(eq(audiobooks.userId, input.userId))
+            .orderBy(asc(audiobooks.title))
+          : db.select({
+              id: audiobooks.id,
+              title: audiobooks.title,
+              author: audiobooks.author,
+              duration: audiobooks.duration,
+              cover: audiobooks.cover,
+              releaseDate: audiobooks.releaseDate,
+            })
+            .from(audiobooks)
+            .orderBy(asc(audiobooks.title)))
       : [];
 
     const podcastRows = shouldFetchPodcasts
-      ? await db
-          .select({
-            id: podcasts.id,
-            title: podcasts.title,
-            author: podcasts.author,
-            duration: podcasts.duration,
-            cover: podcasts.cover,
-            releaseDate: podcasts.releaseDate,
-          })
-          .from(podcasts)
-          .orderBy(asc(podcasts.title))
+      ? await (input?.userId
+          ? db.select({
+              id: podcasts.id,
+              title: podcasts.title,
+              author: podcasts.author,
+              duration: podcasts.duration,
+              cover: podcasts.cover,
+              releaseDate: podcasts.releaseDate,
+            })
+            .from(podcasts)
+            .where(eq(podcasts.userId, input.userId))
+            .orderBy(asc(podcasts.title))
+          : db.select({
+              id: podcasts.id,
+              title: podcasts.title,
+              author: podcasts.author,
+              duration: podcasts.duration,
+              cover: podcasts.cover,
+              releaseDate: podcasts.releaseDate,
+            })
+            .from(podcasts)
+            .orderBy(asc(podcasts.title)))
       : [];
 
     const items = [

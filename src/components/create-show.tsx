@@ -20,7 +20,7 @@ export default function CreateShow({
   setCreateOpen: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: session, isPending: isSessionPending } =
+  const { data: session } =
     authClient.useSession();
 
   const [newType, setNewType] = useState<NewContentType>("podcast");
