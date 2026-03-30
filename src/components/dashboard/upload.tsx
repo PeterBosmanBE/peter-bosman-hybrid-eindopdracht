@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Progress } from "@/src/components/ui/progress";
 import { upload } from "@vercel/blob/client";
+import { AUDIOBOOK_TAGS } from "@/src/types/Tags";
 
 type AudioType = "podcast" | "audiobook" | null;
 
@@ -22,6 +23,7 @@ interface UploadData {
   file: File | null;
   title: string;
   description: string;
+  tags: string[];
   thumbnail: File | null;
   thumbnailPreview: string | null;
   audioType: AudioType;
@@ -49,15 +51,32 @@ export default function Upload() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [audiobookTagQuery, setAudiobookTagQuery] = useState("");
   const [data, setData] = useState<UploadData>({
     file: null,
     title: "",
     description: "",
+    tags: [],
     thumbnail: null,
     thumbnailPreview: null,
     audioType: null,
     podcastId: "",
   });
+
+  const toggleAudiobookTag = (tag: string) => {
+    setData((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter((item) => item !== tag)
+        : [...prev.tags, tag],
+    }));
+  };
+
+  const filteredAudiobookTags = AUDIOBOOK_TAGS.filter(
+    (tag) =>
+      !data.tags.includes(tag) &&
+      tag.toLowerCase().includes(audiobookTagQuery.trim().toLowerCase()),
+  );
 
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,6 +194,7 @@ export default function Upload() {
           title: data.title,
           author: session?.user?.name ?? "Unknown Author",
           description: data.description,
+          tags: data.tags,
           audio: audioUrl,
           cover: coverUrl,
         });
@@ -373,6 +393,50 @@ export default function Upload() {
               className="border-2 border-border focus:border-primary resize-none"
             />
           </div>
+
+          {data.audioType === "audiobook" && (
+            <div className="space-y-2">
+              <label className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                Tags
+              </label>
+                <Input
+                  value={audiobookTagQuery}
+                  onChange={(e) => setAudiobookTagQuery(e.target.value)}
+                  placeholder="Search Tags..."
+                  className="border-2 border-border focus:border-primary"
+                />
+                {filteredAudiobookTags.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto rounded-md border border-border bg-background p-2 flex flex-wrap gap-2">
+                    {filteredAudiobookTags.map((tag) => (
+                      <Button
+                        key={tag}
+                        type="button"
+                        variant="outline"
+                        className="h-8 px-3"
+                        onClick={() => {
+                          toggleAudiobookTag(tag);
+                          setAudiobookTagQuery("");
+                        }}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {data.tags.map((tag) => (
+                    <Button
+                      key={tag}
+                      type="button"
+                      className="h-8 px-3"
+                      onClick={() => toggleAudiobookTag(tag)}
+                    >
+                      {tag} x
+                    </Button>
+                  ))}
+                </div>
+            </div>
+          )}
 
           {/* Thumbnail */}
           <div className="space-y-2">

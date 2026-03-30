@@ -92,7 +92,8 @@ export default function SearchPage() {
 
       return (
         item.title.toLowerCase().includes(normalizedQuery) ||
-        item.author.toLowerCase().includes(normalizedQuery)
+        item.author.toLowerCase().includes(normalizedQuery) ||
+        (item.tags ?? "").toLowerCase().includes(normalizedQuery)
       );
     });
   }, [items, query, typeFilter]);

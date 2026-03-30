@@ -13,6 +13,9 @@ import { NewContentType } from "@/src/types/FilterType";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/src/server/auth/auth-client";
 import { orpc } from "@/src/server/orpc/client";
+import { Dropzone } from "./dropzone";
+import Image from "next/image";
+import { PODCAST_TAGS } from "@/src/types/Tags";
 
 export default function CreateShow({
   setCreateOpen,
@@ -29,6 +32,9 @@ export default function CreateShow({
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [newTags, setNewTags] = useState<string[]>([]);
+  const [tagQuery, setTagQuery] = useState("");
+  const [newLogoUrl, setNewLogoUrl] = useState("");
 
   const canCreate = Boolean(session?.user.id) && Boolean(newTitle.trim());
 
@@ -42,6 +48,9 @@ export default function CreateShow({
         setNewTitle("");
         setNewDescription("");
         setNewCategory("");
+        setNewTags([]);
+        setTagQuery("");
+        setNewLogoUrl("");
       },
     }),
   );
@@ -56,12 +65,38 @@ export default function CreateShow({
         setNewTitle("");
         setNewDescription("");
         setNewCategory("");
+        setNewTags([]);
+        setTagQuery("");
+        setNewLogoUrl("");
       },
     }),
   );
 
+  const uploadLogoMutation = useMutation(orpc.uploads.create.mutationOptions());
+
   const isCreating =
     createPodcastMutation.isPending || createAudiobookMutation.isPending;
+
+  const isUploadingLogo = uploadLogoMutation.isPending;
+
+  async function handleLogoDrop(files: File[]) {
+    const file = files[0];
+    if (!file) return;
+    const result = await uploadLogoMutation.mutateAsync(file);
+    setNewLogoUrl(result.url);
+  }
+
+  function togglePodcastTag(tag: string) {
+    setNewTags((prev) =>
+      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
+    );
+  }
+
+  const filteredPodcastTags = PODCAST_TAGS.filter(
+    (tag) =>
+      !newTags.includes(tag) &&
+      tag.toLowerCase().includes(tagQuery.trim().toLowerCase()),
+  );
 
   async function handleCreateContent() {
     if (!session?.user.id || !newTitle.trim()) return;
@@ -72,6 +107,8 @@ export default function CreateShow({
       author: session.user.name || "Unknown",
       description: newDescription.trim(),
       category: newCategory.trim(),
+      tags: newTags,
+      cover: newLogoUrl || undefined,
     };
 
     if (newType === "podcast") {
@@ -90,8 +127,7 @@ export default function CreateShow({
         </DialogDescription>
       </DialogHeader>
       <div
-        className="p-2 flex flex-col gap-4"
-        style={{ background: "#FAFAF8" }}
+        className="p-2 flex flex-col gap-4 bg-[#FAFAF8]"
       >
         <div className="grid gap-2 sm:grid-cols-2">
           <Button
@@ -125,8 +161,7 @@ export default function CreateShow({
             <div className="space-y-3">
               <div className="space-y-1">
                 <p
-                  className="text-xs font-semibold uppercase"
-                  style={{ color: "#666666" }}
+                  className="text-xs font-semibold uppercase text-[#666666]"
                 >
                   Title
                 </p>
@@ -139,8 +174,7 @@ export default function CreateShow({
 
               <div className="space-y-1">
                 <p
-                  className="text-xs font-semibold uppercase"
-                  style={{ color: "#666666" }}
+                  className="text-xs font-semibold uppercase text-[#666666]"
                 >
                   Category
                 </p>
@@ -151,10 +185,91 @@ export default function CreateShow({
                 />
               </div>
 
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-[#666666]">
+                  Tags
+                </p>
+                <Input
+                  value={tagQuery}
+                  onChange={(e) => setTagQuery(e.target.value)}
+                  placeholder="Search Tags..."
+                />
+                {filteredPodcastTags.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto rounded-md border border-[#E8E8E8] bg-white p-2 flex flex-wrap gap-2">
+                    {filteredPodcastTags.map((tag) => (
+                      <Button
+                        key={tag}
+                        type="button"
+                        variant="outline"
+                        className="h-8 px-3"
+                        onClick={() => {
+                          togglePodcastTag(tag);
+                          setTagQuery("");
+                        }}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {newTags.map((tag) => (
+                    <Button
+                      key={tag}
+                      type="button"
+                      className="h-8 px-3"
+                      onClick={() => togglePodcastTag(tag)}
+                    >
+                      {tag} x
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-[#666666]">
+                  Podcast logo
+                </p>
+                <div className="border-2 border-dashed border-[#E8E8E8] rounded-lg p-4 text-center">
+                  <Dropzone
+                    accept={{ "image/*": [] }}
+                    onFileSelected={handleLogoDrop}
+                    idleTitle="Drag & drop your podcast logo"
+                    activeTitle="Release to upload your podcast logo"
+                    activeSubtitle="Great, we are uploading your logo."
+                    buttonLabel="or click to choose an image"
+                    footerText="PNG, JPG, WEBP up to 10MB"
+                  />
+                </div>
+                {isUploadingLogo && (
+                  <p className="text-xs text-[#666666]">Uploading logo...</p>
+                )}
+                {newLogoUrl && (
+                  <div className="rounded-lg border border-[#E8E8E8] p-2 flex items-center gap-3">
+                    <Image
+                      src={newLogoUrl}
+                      alt="Podcast logo preview"
+                      width={56}
+                      height={56}
+                      className="w-14 h-14 rounded-md object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[#666666] truncate">Logo uploaded</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setNewLogoUrl("")}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-1">
                 <p
-                  className="text-xs font-semibold uppercase"
-                  style={{ color: "#666666" }}
+                  className="text-xs font-semibold uppercase text-[#666666]"
                 >
                   Description
                 </p>

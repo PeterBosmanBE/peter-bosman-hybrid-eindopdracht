@@ -3,11 +3,32 @@
 import { orpc } from "@/src/server/orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback } from "react";
+import type { Accept } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Icons } from "./icons";
 
-export function Dropzone({ onFileSelected }: { onFileSelected?: (files: File[]) => void }) {
+type DropzoneProps = {
+  onFileSelected?: (files: File[]) => void;
+  accept?: Accept;
+  idleTitle?: string;
+  activeTitle?: string;
+  activeSubtitle?: string;
+  buttonLabel?: string;
+  footerText?: string;
+};
+
+export function Dropzone({
+  onFileSelected,
+  accept = {
+    "audio/*": [],
+  },
+  idleTitle = "Drag & drop your audio file",
+  activeTitle = "Release to upload your audio file",
+  activeSubtitle = "Nice, we are ready to receive it.",
+  buttonLabel = "or click to browse",
+  footerText = "MP3, WAV, M4A up to 500MB",
+}: DropzoneProps) {
   const uploadMutation = useMutation(
     orpc.uploads.create.mutationOptions({
       onSuccess: () => {
@@ -31,6 +52,8 @@ export function Dropzone({ onFileSelected }: { onFileSelected?: (files: File[]) 
   }, [uploadMutation, onFileSelected]);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    accept,
+    multiple: false,
   });
 
   return (
@@ -58,10 +81,10 @@ export function Dropzone({ onFileSelected }: { onFileSelected?: (files: File[]) 
             </svg>
           </div>
           <p className="font-semibold mb-1" style={{ color: "#232F3E" }}>
-            Release to upload your audio file
+            {activeTitle}
           </p>
           <p className="text-sm" style={{ color: "#666666" }}>
-            Nice, we are ready to receive it.
+            {activeSubtitle}
           </p>
         </>
       ) : (
@@ -73,23 +96,18 @@ export function Dropzone({ onFileSelected }: { onFileSelected?: (files: File[]) 
             <Icons.upload className="w-8 h-8" style={{ color: "#F7941D" }} />
           </div>
           <p className="font-semibold mb-1" style={{ color: "#232F3E" }}>
-            Drag & drop your audio file
+            {idleTitle}
           </p>
           <div>
             <label className="cursor-pointer">
               <span className="inline-block px-6 py-3 bg-primary text-primary-foreground font-semibold uppercase tracking-wide rounded-sm hover:bg-primary/90 transition-colors">
-              or click to browse
+              {buttonLabel}
               </span>
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-              />
             </label>
           </div>
 
           <p className="text-xs mt-2" style={{ color: "#999999" }}>
-            MP3, WAV, M4A up to 500MB
+            {footerText}
           </p>
         </>
       )}
