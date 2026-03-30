@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use, useRef } from 'react';
+import { useState, useEffect, use, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Logo from '@/src/components/ui/logo';
 import { orpc } from '@/src/server/orpc/client';
@@ -8,6 +8,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/src/components/ui/input';
 
 type PageParams = { id: string };
+
+function getEpisodeBadgeNumber(title: string, index: number, total: number) {
+  const match = title.match(/#\s*(\d+)\b/i);
+  if (match) {
+    const parsed = Number.parseInt(match[1], 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  return Math.max(1, total - index);
+}
 
 export default function ListenPodcast({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
@@ -17,7 +27,15 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
   const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "podcast" } }));
   const content = data?.content;
   const isPodcast = content?.type === 'podcast';
-  const podcastEpisodes = isPodcast ? content.episodes : [];
+  const podcastEpisodes = useMemo(() => {
+    if (!isPodcast) return [];
+
+    return [...content.episodes].sort((a, b) => {
+      const aDate = a.date ? new Date(a.date).getTime() : 0;
+      const bDate = b.date ? new Date(b.date).getTime() : 0;
+      return bDate - aDate;
+    });
+  }, [isPodcast, content]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -27,9 +45,19 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [volume, setVolume] = useState(80);
   const [showChapters, setShowChapters] = useState(false);
-  const [currentEpisode, setCurrentEpisode] = useState(0);
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
   const [localBookmarks, setLocalBookmarks] = useState<number[]>([]);
   const [isReady, setIsReady] = useState(false);
+
+  const currentEpisodeIndex = useMemo(() => {
+    if (!podcastEpisodes.length) return -1;
+    if (!selectedEpisodeId) return 0;
+
+    const foundIndex = podcastEpisodes.findIndex((episode) => episode.id === selectedEpisodeId);
+    return foundIndex >= 0 ? foundIndex : 0;
+  }, [podcastEpisodes, selectedEpisodeId]);
+
+  const episode = currentEpisodeIndex >= 0 ? podcastEpisodes[currentEpisodeIndex] : undefined;
 
   const bookmarks = Array.from(new Set([
     ...(dbBookmarks?.map(b => b.positionSeconds) || []), 
@@ -37,7 +65,7 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
   ])).sort((a, b) => a - b);
 
   // Derive audio url from the current episode
-  const currentAudioUrl = podcastEpisodes[currentEpisode]?.audio || '';
+  const currentAudioUrl = episode?.audio || '';
 
   useEffect(() => {
     if (!currentAudioUrl) return;
@@ -60,8 +88,8 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
     const setAudioEnd = () => {
         setIsPlaying(false);
         // Autoplay next episode?
-        if (podcastEpisodes.length && currentEpisode < podcastEpisodes.length - 1) {
-            setCurrentEpisode(prev => prev + 1);
+      if (podcastEpisodes.length && currentEpisodeIndex >= 0 && currentEpisodeIndex < podcastEpisodes.length - 1) {
+        setSelectedEpisodeId(podcastEpisodes[currentEpisodeIndex + 1].id);
             setIsPlaying(true);
         }
     }
@@ -75,7 +103,7 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
         audio.removeEventListener('timeupdate', setAudioTime);
         audio.removeEventListener('ended', setAudioEnd);
     }
-  }, [currentAudioUrl, podcastEpisodes, currentEpisode]);
+  }, [currentAudioUrl, podcastEpisodes, currentEpisodeIndex]);
 
   // Clean up audio on unmount
   useEffect(() => {
@@ -172,8 +200,6 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
     );
   }
 
-  const episode = podcastEpisodes[currentEpisode];
-
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#121212', fontFamily: "'Source Sans 3', sans-serif" }}>
 
@@ -268,7 +294,10 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
             </button>
 
             <button 
-              onClick={() => setCurrentEpisode(Math.max(0, currentEpisode - 1))}
+              onClick={() => {
+                if (currentEpisodeIndex <= 0) return;
+                setSelectedEpisodeId(podcastEpisodes[currentEpisodeIndex - 1].id);
+              }}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -294,7 +323,10 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
             </button>
 
             <button 
-              onClick={() => setCurrentEpisode(Math.min((podcastEpisodes.length || 1) - 1, currentEpisode + 1))}
+              onClick={() => {
+                if (currentEpisodeIndex < 0 || currentEpisodeIndex >= podcastEpisodes.length - 1) return;
+                setSelectedEpisodeId(podcastEpisodes[currentEpisodeIndex + 1].id);
+              }}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -375,27 +407,27 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
               <div className="space-y-1">
                 {podcastEpisodes.length > 0 ? podcastEpisodes.map((ep, index) => (
                   <button
-                    key={index}
+                    key={ep.id}
                     onClick={() => {
-                        setCurrentEpisode(index);
+                        setSelectedEpisodeId(ep.id);
                         setIsPlaying(true);
                     }}
-                    className={`w-full text-left p-4 rounded-lg transition-colors ${currentEpisode === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                    className={`w-full text-left p-4 rounded-lg transition-colors ${currentEpisodeIndex === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-3">
-                      {currentEpisode === index && isPlaying ? (
+                      {currentEpisodeIndex === index && isPlaying ? (
                         <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#F7941D' }}>
                           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </div>
                       ) : (
-                        <span className="w-6 h-6 text-sm font-semibold flex items-center justify-center" style={{ color: currentEpisode === index ? '#F7941D' : 'rgba(255,255,255,0.4)' }}>
-                          {index + 1}
+                        <span className="w-6 h-6 text-sm font-semibold flex items-center justify-center" style={{ color: currentEpisodeIndex === index ? '#F7941D' : 'rgba(255,255,255,0.4)' }}>
+                          {getEpisodeBadgeNumber(ep.title, index, podcastEpisodes.length)}
                         </span>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold truncate ${currentEpisode === index ? 'text-white' : ''}`} style={{ color: currentEpisode === index ? 'white' : 'rgba(255,255,255,0.7)' }}>
+                        <p className={`text-sm font-semibold truncate ${currentEpisodeIndex === index ? 'text-white' : ''}`} style={{ color: currentEpisodeIndex === index ? 'white' : 'rgba(255,255,255,0.7)' }}>
                           {ep.title}
                         </p>
                         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{ep.duration}</p>

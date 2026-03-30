@@ -17,7 +17,6 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
   const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
   const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "audiobook" } }));
   const content = data?.content;
-  const audioUrl = content?.type === 'audiobook' ? content.audio : undefined;
   const audiobookChapters = content?.type === 'audiobook' ? content.chapters : [];
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -31,6 +30,8 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
   const [currentChapter, setCurrentChapter] = useState(0);
   const [localBookmarks, setLocalBookmarks] = useState<number[]>([]);
   const [isReady, setIsReady] = useState(false);
+
+  const audioUrl = audiobookChapters[currentChapter]?.audio;
 
   const bookmarks = Array.from(new Set([
     ...(dbBookmarks?.map(b => b.positionSeconds) || []), 
@@ -262,7 +263,10 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.max(0, currentChapter - 1))}
+              onClick={() => {
+                setCurrentChapter((prev) => Math.max(0, prev - 1));
+                setCurrentTime(0);
+              }}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -288,7 +292,10 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
             </button>
 
             <button 
-              onClick={() => setCurrentChapter(Math.min((audiobookChapters.length || 1) - 1, currentChapter + 1))}
+              onClick={() => {
+                setCurrentChapter((prev) => Math.min((audiobookChapters.length || 1) - 1, prev + 1));
+                setCurrentTime(0);
+              }}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
@@ -371,7 +378,10 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
                 {audiobookChapters.length > 0 ? audiobookChapters.map((chapter, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentChapter(index)}
+                    onClick={() => {
+                      setCurrentChapter(index);
+                      setCurrentTime(0);
+                    }}
                     className={`w-full text-left p-4 rounded-lg transition-colors ${currentChapter === index ? 'bg-white/10' : 'hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-3">
