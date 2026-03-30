@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
@@ -33,8 +33,10 @@ export default function SearchPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
 
   const query = searchParams.get("q") ?? "";
+  const selectedTags = searchParams.getAll("tag");
   const typeParam = (searchParams.get("type") as FilterType | null) ?? "all";
   const pageParam = Number(searchParams.get("page") ?? "1");
   const requestedPage = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -43,7 +45,7 @@ export default function SearchPage() {
       ? typeParam
       : "all";
 
-  const updateSearchParams = (next: { q?: string; type?: FilterType; page?: number; resetPage?: boolean }) => {
+  const updateSearchParams = (next: { q?: string; type?: FilterType; tags?: string[]; page?: number; resetPage?: boolean }) => {
     const params = new URLSearchParams(searchParams.toString());
 
     if (typeof next.q === "string") {
@@ -61,6 +63,11 @@ export default function SearchPage() {
       } else {
         params.set("type", next.type);
       }
+    }
+
+    if (next.tags) {
+      params.delete("tag");
+      next.tags.forEach((tag) => params.append("tag", tag));
     }
 
     if (next.resetPage) {
@@ -81,29 +88,64 @@ export default function SearchPage() {
 
   const items = useMemo(() => contentQuery.data?.items ?? [], [contentQuery.data?.items]);
 
-  const filteredItems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const availableTypes = useMemo(() => {
+    const uniqueTypes = Array.from(new Set(items.map((item) => item.type))) as Exclude<FilterType, "all">[];
+    return ["all", ...uniqueTypes] as FilterType[];
+  }, [items]);
 
-    return items.filter((item) => {
-      const matchesType = typeFilter === "all" || item.type === typeFilter;
-
-      if (!matchesType) return false;
-      if (!normalizedQuery) return true;
-
-      return (
-        item.title.toLowerCase().includes(normalizedQuery) ||
-        item.author.toLowerCase().includes(normalizedQuery) ||
-        (item.tags ?? "").toLowerCase().includes(normalizedQuery)
-      );
+  const availableTags = useMemo(() => {
+    const uniqueTags = new Set<string>();
+    items.forEach((item) => {
+      const parsedTags = (item.tags ?? "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      parsedTags.forEach((tag) => uniqueTags.add(tag));
     });
-  }, [items, query, typeFilter]);
+    return Array.from(uniqueTags).sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
+  const filteredAvailableTags = useMemo(() => {
+    const normalizedTagSearch = tagSearchQuery.trim().toLowerCase();
+    if (!normalizedTagSearch) return availableTags;
+    return availableTags.filter((tag) =>
+      tag.toLowerCase().includes(normalizedTagSearch),
+    );
+  }, [availableTags, tagSearchQuery]);
+
+  const toggleTag = (tag: string) => {
+    const nextTags = selectedTags.includes(tag)
+      ? selectedTags.filter((item) => item !== tag)
+      : [...selectedTags, tag];
+    updateSearchParams({ q: query, type: typeFilter, tags: nextTags, resetPage: true });
+  };
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredItems = items.filter((item) => {
+    const matchesType = typeFilter === "all" || item.type === typeFilter;
+    const itemTags = (item.tags ?? "")
+      .split(",")
+      .map((tag) => tag.trim().toLowerCase())
+      .filter(Boolean);
+    const matchesSelectedTags =
+      selectedTags.length === 0 ||
+      selectedTags.some((tag) => itemTags.includes(tag.toLowerCase()));
+
+    if (!matchesType) return false;
+    if (!matchesSelectedTags) return false;
+    if (!normalizedQuery) return true;
+
+    return (
+      item.title.toLowerCase().includes(normalizedQuery) ||
+      item.author.toLowerCase().includes(normalizedQuery) ||
+      (item.tags ?? "").toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(requestedPage, totalPages);
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredItems.slice(start, start + PAGE_SIZE);
-  }, [filteredItems, currentPage]);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const paginatedItems = filteredItems.slice(start, start + PAGE_SIZE);
 
   const totalMatches = filteredItems.length;
 
@@ -158,10 +200,12 @@ export default function SearchPage() {
                 Filter By Type
               </h2>
               <div className="flex lg:flex-col gap-2">
-                {(["all", "audiobook", "podcast"] as const).map((filter) => (
+                {availableTypes.map((filter) => (
                   <button
                     key={filter}
-                    onClick={() => updateSearchParams({ q: query, type: filter, resetPage: true })}
+                    onClick={() =>
+                      updateSearchParams({ q: query, type: filter, tags: selectedTags, resetPage: true })
+                    }
                     className="px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors text-left"
                     style={{
                       background: typeFilter === filter ? "#232F3E" : "#F5F5F5",
@@ -171,6 +215,50 @@ export default function SearchPage() {
                     {filter === "all" ? "All" : `${filter}s`}
                   </button>
                 ))}
+              </div>
+
+              <h2 className="font-serif text-lg font-bold mt-6 mb-3" style={{ color: "#232F3E" }}>
+                Filter By Tags
+              </h2>
+              <input
+                type="text"
+                value={tagSearchQuery}
+                onChange={(e) => setTagSearchQuery(e.target.value)}
+                placeholder="Search tags..."
+                className="w-full py-2 px-3 rounded-lg text-sm border"
+                style={{ background: "#FFFFFF", borderColor: "#E8E8E8", color: "#232F3E" }}
+              />
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {selectedTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className="px-2 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: "#232F3E", color: "#FFFFFF" }}
+                    >
+                      {tag} x
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 mt-3 max-h-44 overflow-y-auto">
+                {filteredAvailableTags.map((tag) => {
+                  const isActive = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className="px-2 py-1 rounded-full text-xs font-semibold"
+                      style={{
+                        background: isActive ? "#232F3E" : "#F5F5F5",
+                        color: isActive ? "#FFFFFF" : "#666666",
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
               </div>
             </aside>
 
@@ -270,7 +358,7 @@ export default function SearchPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             if (currentPage > 1) {
-                              updateSearchParams({ q: query, type: typeFilter, page: currentPage - 1 });
+                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, page: currentPage - 1 });
                             }
                           }}
                         />
@@ -282,7 +370,7 @@ export default function SearchPage() {
                             isActive={page === currentPage}
                             onClick={(e) => {
                               e.preventDefault();
-                              updateSearchParams({ q: query, type: typeFilter, page });
+                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, page });
                             }}
                           >
                             {page}
@@ -296,7 +384,7 @@ export default function SearchPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             if (currentPage < totalPages) {
-                              updateSearchParams({ q: query, type: typeFilter, page: currentPage + 1 });
+                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, page: currentPage + 1 });
                             }
                           }}
                         />
