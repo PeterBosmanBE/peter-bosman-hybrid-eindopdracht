@@ -55,9 +55,9 @@ export default function Sidebar({ activeTab, onTabChange, isOpen = false }: Side
             <p className="px-3 mt-8 mb-3 text-xs font-semibold uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>Quick Links</p>
             <ul className="space-y-1">
               <li>
-                <Link href="/home" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <Link href="/library" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  Browse Library
+                  My Library
                 </Link>
               </li>
               <li>

@@ -30,6 +30,20 @@ export const bookmarks = pgTable(
   (table) => [index("bookmarks_userId_idx").on(table.userId)]
 );
 
+export const library = pgTable(
+  "library",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    contentId: text("content_id").notNull(),
+    contentType: text("content_type").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("library_userId_idx").on(table.userId)]
+);
+
 export const session = pgTable(
   "session",
   {

@@ -71,6 +71,13 @@
       "when": 1774895665574,
       "tag": "0009_pretty_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774901302496,
+      "tag": "0010_wonderful_bastion",
+      "breakpoints": true
     }
   ]
 }

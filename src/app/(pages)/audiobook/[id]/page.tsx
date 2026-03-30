@@ -2,12 +2,15 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { orpc } from '@/src/server/orpc/client';
 import Image from 'next/image';
 import './details.css';
 import LoadingDetails from './loading';
 import NotFound from './not-found';
+import { authClient } from '@/src/server/auth/auth-client';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 type PageParams = { id: string };
 
@@ -24,10 +27,78 @@ function formatDate(value: string | null) {
 
 export default function Details({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');
-  const [isInLibrary, setIsInLibrary] = useState(false);
   const detailQuery = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
+  const libraryStatusQuery = useQuery({
+    ...orpc.library.isInLibrary.queryOptions({
+      input: {
+        contentId: id,
+        contentType: 'audiobook',
+      },
+    }),
+    enabled: Boolean(session?.user?.id),
+  });
+
+  const addToLibraryMutation = useMutation(
+    orpc.library.addToLibrary.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: orpc.library.isInLibrary.queryKey({
+            input: {
+              contentId: id,
+              contentType: 'audiobook',
+            },
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: orpc.library.listLibrary.queryKey() });
+        toast.success('Added to your library');
+      },
+      onError: () => {
+        toast.error('Could not add to library');
+      },
+    }),
+  );
+
+  const removeFromLibraryMutation = useMutation(
+    orpc.library.removeFromLibrary.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: orpc.library.isInLibrary.queryKey({
+            input: {
+              contentId: id,
+              contentType: 'audiobook',
+            },
+          }),
+        });
+        queryClient.invalidateQueries({ queryKey: orpc.library.listLibrary.queryKey() });
+        toast.success('Removed from your library');
+      },
+      onError: () => {
+        toast.error('Could not remove from library');
+      },
+    }),
+  );
+
+  const isInLibrary = Boolean(libraryStatusQuery.data?.isInLibrary);
+  const isLibraryActionPending = addToLibraryMutation.isPending || removeFromLibraryMutation.isPending;
+
+  async function handleToggleLibrary() {
+    if (!session?.user?.id) {
+      router.push('/sign-in');
+      return;
+    }
+
+    if (isInLibrary) {
+      await removeFromLibraryMutation.mutateAsync({ contentId: id, contentType: 'audiobook' });
+      return;
+    }
+
+    await addToLibraryMutation.mutateAsync({ contentId: id, contentType: 'audiobook' });
+  }
 
   if (detailQuery.isPending) {
     return <LoadingDetails />;
@@ -105,7 +176,8 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                   Play Sample
                 </Link>
                 <button
-                  onClick={() => setIsInLibrary(!isInLibrary)}
+                  onClick={handleToggleLibrary}
+                  disabled={isLibraryActionPending}
                   className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold transition-all border ${isInLibrary ? 'bg-white/10' : ''}`}
                   style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
                 >
