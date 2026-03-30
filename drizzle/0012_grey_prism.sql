@@ -1,0 +1,1 @@
+ALTER TABLE "audiobooks" ALTER COLUMN "duration" DROP NOT NULL;
