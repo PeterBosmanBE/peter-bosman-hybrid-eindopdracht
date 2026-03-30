@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,47 @@ function formatDate(value: string | null) {
   });
 }
 
+function formatSecondsToDuration(totalSeconds: number) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function parseDurationToSeconds(duration: string | null | undefined) {
+  if (!duration) return 0;
+
+  const parts = duration.split(':').map((part) => Number.parseInt(part, 10));
+  if (parts.length === 3 && parts.every((part) => Number.isFinite(part))) {
+    return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  }
+
+  if (parts.length === 2 && parts.every((part) => Number.isFinite(part))) {
+    return (parts[0] * 60) + parts[1];
+  }
+
+  return 0;
+}
+
+function getEpisodeBadgeNumber(title: string, index: number, total: number) {
+  const match = title.match(/#\s*(\d+)\b/i);
+  if (match) {
+    const parsed = Number.parseInt(match[1], 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  // Episodes are shown newest-first, so reverse the index for legacy numbering.
+  return Math.max(1, total - index);
+}
+
 export default function Details({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -30,6 +71,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
   const { data: session } = authClient.useSession();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');
+  const [resolvedDurations, setResolvedDurations] = useState<Record<string, string>>({});
 
   const detailQuery = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
   const libraryStatusQuery = useQuery({
@@ -102,6 +144,74 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
   const content = detailQuery.data?.content;
   const relatedContent = detailQuery.data?.related ?? [];
 
+  const listItems = useMemo(() => {
+    if (!content) return [] as Array<{ id: string; title: string; duration: string; subtitle: string | null; audio: string }>;
+
+    return content.type === 'audiobook'
+      ? content.chapters.map((item) => ({ id: item.id, title: item.title, duration: item.duration, subtitle: null, audio: item.audio }))
+      : [...content.episodes]
+        .sort((a, b) => {
+          const aTime = a.date ? new Date(a.date).getTime() : 0;
+          const bTime = b.date ? new Date(b.date).getTime() : 0;
+          return bTime - aTime;
+        })
+        .map((item) => ({ id: item.id, title: item.title, duration: item.duration, subtitle: formatDate(item.date), audio: item.audio }));
+  }, [content]);
+
+  useEffect(() => {
+    if (!content) return;
+
+    const needsResolving = listItems.filter(
+      (item) => item.audio && (!item.duration || item.duration === '00:00') && !resolvedDurations[item.id],
+    );
+
+    if (needsResolving.length === 0) return;
+
+    let cancelled = false;
+
+    needsResolving.forEach((item) => {
+      const audio = document.createElement('audio');
+      audio.preload = 'metadata';
+
+      audio.onloadedmetadata = () => {
+        if (cancelled) return;
+        const seconds = Number.isFinite(audio.duration) ? Math.floor(audio.duration) : 0;
+        if (seconds > 0) {
+          setResolvedDurations((prev) => ({
+            ...prev,
+            [item.id]: formatSecondsToDuration(seconds),
+          }));
+        }
+      };
+
+      audio.src = item.audio;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content, listItems, resolvedDurations]);
+
+  const displayDuration = useMemo(() => {
+    if (!content) return '00:00';
+
+    if (content.duration && content.duration !== '00:00') {
+      return content.duration;
+    }
+
+    if (content.type !== 'podcast' || content.episodes.length === 0) {
+      return content.duration || '00:00';
+    }
+
+    const latestEpisode = [...content.episodes].sort((a, b) => {
+      const aTime = a.date ? new Date(a.date).getTime() : 0;
+      const bTime = b.date ? new Date(b.date).getTime() : 0;
+      return bTime - aTime;
+    })[0];
+
+    return resolvedDurations[latestEpisode.id] || latestEpisode.duration || '00:00';
+  }, [content, resolvedDurations]);
+
   if (detailQuery.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAFAF8' }}>
@@ -129,11 +239,6 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
       </div>
     );
   }
-
-  const listItems =
-    content.type === 'audiobook'
-      ? content.chapters.map((item) => ({ title: item.title, duration: item.duration, subtitle: null }))
-      : content.episodes.map((item) => ({ title: item.title, duration: item.duration, subtitle: formatDate(item.date) }));
 
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF8', fontFamily: "'Source Sans 3', sans-serif" }}>
@@ -167,7 +272,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
               <div className="flex flex-wrap gap-6 mb-8">
                 <div>
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Duration</p>
-                  <p className="text-white font-semibold">{content.duration}</p>
+                  <p className="text-white font-semibold">{displayDuration}</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Release Date</p>
@@ -177,10 +282,12 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                   <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Language</p>
                   <p className="text-white font-semibold">{content.language}</p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Category</p>
-                  <p className="text-white font-semibold">{content.category}</p>
-                </div>
+                {content.tags && (
+                  <div>
+                    <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Tags</p>
+                    <p className="text-white font-semibold">{content.tags}</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -274,19 +381,23 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                   ) : (
                     listItems.map((item, index) => (
                       <Link
-                        key={`${item.title}-${index}`}
+                        key={item.id}
                         href={`/listen/podcast/${id}`}
                         className="flex items-center justify-between p-4 rounded-lg transition-colors hover:bg-white group"
                         style={{ background: '#FAFAF8' }}
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-full flex items-center justify-center transition-colors" style={{ background: '#F5F5F5' }}>
-                            <span className="text-sm font-semibold" style={{ color: '#666666' }}>{index + 1}</span>
+                            <span className="text-sm font-semibold" style={{ color: '#666666' }}>
+                              {content.type === 'podcast'
+                                ? getEpisodeBadgeNumber(item.title, index, listItems.length)
+                                : index + 1}
+                            </span>
                           </div>
                           <div>
                             <p className="font-semibold group-hover:text-orange-500 transition-colors" style={{ color: '#232F3E' }}>{item.title}</p>
                             <p className="text-sm" style={{ color: '#666666' }}>
-                              {item.duration}{item.subtitle ? ` • ${item.subtitle}` : ''}
+                              {(resolvedDurations[item.id] || item.duration || '00:00')}{item.subtitle ? ` • ${item.subtitle}` : ''}
                             </p>
                           </div>
                         </div>
