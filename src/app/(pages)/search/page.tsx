@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/src/server/orpc/client";
 import { FilterType } from "@/src/types/FilterType";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -19,8 +20,40 @@ function formatDate(value: string | null) {
 }
 
 export default function SearchPage() {
-  const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<FilterType>("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const query = searchParams.get("q") ?? "";
+  const typeParam = (searchParams.get("type") as FilterType | null) ?? "all";
+  const typeFilter: FilterType =
+    typeParam === "audiobook" || typeParam === "podcast" || typeParam === "all"
+      ? typeParam
+      : "all";
+
+  const updateSearchParams = (next: { q?: string; type?: FilterType }) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (typeof next.q === "string") {
+      const trimmed = next.q.trim();
+      if (trimmed) {
+        params.set("q", trimmed);
+      } else {
+        params.delete("q");
+      }
+    }
+
+    if (next.type) {
+      if (next.type === "all") {
+        params.delete("type");
+      } else {
+        params.set("type", next.type);
+      }
+    }
+
+    const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+  };
 
   const contentQuery = useQuery(orpc.content.list.queryOptions({ input: { type: "all" } }));
 
@@ -66,7 +99,7 @@ export default function SearchPage() {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => updateSearchParams({ q: e.target.value, type: typeFilter })}
               placeholder="Try: Morgan Housel, Sapiens, Atomic Habits..."
               className="w-full py-3.5 px-5 pr-12 rounded-full text-sm focus:outline-none border"
               style={{ background: "#FFFFFF", borderColor: "rgba(255,255,255,0.3)", color: "#232F3E" }}
@@ -98,7 +131,7 @@ export default function SearchPage() {
                 {(["all", "audiobook", "podcast"] as const).map((filter) => (
                   <button
                     key={filter}
-                    onClick={() => setTypeFilter(filter)}
+                    onClick={() => updateSearchParams({ q: query, type: filter })}
                     className="px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors text-left"
                     style={{
                       background: typeFilter === filter ? "#232F3E" : "#F5F5F5",

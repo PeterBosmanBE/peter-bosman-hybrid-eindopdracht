@@ -5,10 +5,29 @@ import { useState } from "react";
 import Logo from "../ui/logo";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import SignIn from "../sign-in";
+import { authClient } from "@/src/server/auth/auth-client";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileSearchQuery, setMobileSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const runSearch = (value: string) => {
+    const trimmed = value.trim();
+    const params = new URLSearchParams();
+
+    if (trimmed) {
+      params.set("q", trimmed);
+    }
+
+    const target = params.toString() ? `/search?${params.toString()}` : "/search";
+    router.push(target);
+    setIsMenuOpen(false);
+  };
 
   return (
     <>
@@ -30,6 +49,12 @@ export default function Header() {
                   placeholder="Search for audiobooks, podcasts, authors..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      runSearch(searchQuery);
+                    }
+                  }}
                   className="w-full py-3 px-5 pr-12 rounded-full text-sm focus:outline-none border"
                   style={{
                     background: "#F5F5F5",
@@ -37,7 +62,12 @@ export default function Header() {
                     color: "#232F3E",
                   }}
                 />
-                <Button className="absolute right-4 top-1/2 -translate-y-1/2" variant="ghost" size="icon">
+                <Button
+                  className="absolute right-4 top-1/2 -translate-y-1/2"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => runSearch(searchQuery)}
+                >
                   <svg
                     className="w-5 h-5"
                     style={{ color: "#666666" }}
@@ -58,16 +88,9 @@ export default function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-4">
-              <Link
-                href="/dashboard"
-                className="nav-item hidden md:block text-sm font-semibold transition-colors"
-                style={{ color: "#232F3E" }}
-              >
-                Dashboard
-              </Link>
               <AvatarDropdown />
               <Button
-                className="md:hidden"
+                className="md:hidden bg-transparent"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 <svg
@@ -94,24 +117,49 @@ export default function Header() {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-            <div
-              className="md:hidden px-6 pb-4 border-t border-nav-border"
-            >
+            <div className="md:hidden px-6 pb-4 border-t border-nav-border">
               <Input
                 type="text"
                 placeholder="Search..."
+                value={mobileSearchQuery}
+                onChange={(e) => setMobileSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    runSearch(mobileSearchQuery);
+                  }
+                }}
                 className="w-full mt-4 py-3 px-4 rounded-lg text-sm border"
                 style={{ background: "#F5F5F5", borderColor: "#E8E8E8" }}
               />
-              <div className="flex flex-col gap-3 mt-4">
-                <Link
-                  href="/dashboard"
-                  className="text-sm font-semibold"
-                  style={{ color: "#232F3E" }}
-                >
-                  Dashboard
-                </Link>
-              </div>
+              <Button
+                className="w-full mt-3"
+                onClick={() => runSearch(mobileSearchQuery)}
+              >
+                Search
+              </Button>
+              {session ? (
+                <div>
+                  <p>My Account</p>
+                  <div>
+                    <Link href="/dashboard">Dashboard</Link>
+                  </div>
+                  <div>
+                    <Link href={`/profile/${session.user.id}`}>Profile</Link>
+                  </div>
+                </div>
+              ) : (
+                <Button className="w-full md:hidden bg-transparent text-black">
+                  <SignIn />
+                </Button>
+              )}
+              {session ? (
+                <div onClick={() => authClient.signOut()}>
+                  Sign Out
+                </div>
+              ) : (
+                ""
+              )}
             </div>
           )}
         </div>
