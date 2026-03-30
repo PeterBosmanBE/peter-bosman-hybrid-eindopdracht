@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/src/server/db/client";
 import * as schema from "@/src/server/db/schema";
+import { dash } from "@better-auth/infra";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -26,4 +27,7 @@ export const auth = betterAuth({
             clientSecret: process.env.DISCORD_CLIENT_SECRET as string, 
         },
     },
+    plugins: [
+        dash()
+    ]
 });

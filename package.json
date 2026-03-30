@@ -10,6 +10,7 @@
     "drizzle:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@better-auth/infra": "^0.1.13",
     "@orpc/client": "^1.13.6",
     "@orpc/server": "^1.13.6",
     "@orpc/tanstack-query": "^1.13.6",
