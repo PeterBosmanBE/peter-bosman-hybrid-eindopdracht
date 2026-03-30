@@ -17,6 +17,57 @@ import NoAudiobookCover from "@/public/no-audiobook-cover.webp";
 
 const APPROVED_TAGS = [...new Set([...PODCAST_TAGS, ...AUDIOBOOK_TAGS])];
 
+function parseDurationToSeconds(duration: string | null | undefined) {
+  if (!duration) return 0;
+
+  const value = duration.trim();
+  if (!value) return 0;
+
+  if (value.includes(":")) {
+    const parts = value
+      .split(":")
+      .map((part) => Number.parseInt(part, 10))
+      .filter((part) => Number.isFinite(part));
+
+    if (parts.length === 3) {
+      return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+    }
+
+    if (parts.length === 2) {
+      return (parts[0] * 60) + parts[1];
+    }
+  }
+
+  const hoursMatch = value.match(/(\d+)\s*h/i);
+  const minutesMatch = value.match(/(\d+)\s*m/i);
+  const secondsMatch = value.match(/(\d+)\s*s/i);
+
+  if (hoursMatch || minutesMatch || secondsMatch) {
+    const hours = Number.parseInt(hoursMatch?.[1] ?? "0", 10);
+    const minutes = Number.parseInt(minutesMatch?.[1] ?? "0", 10);
+    const seconds = Number.parseInt(secondsMatch?.[1] ?? "0", 10);
+    return (hours * 3600) + (minutes * 60) + seconds;
+  }
+
+  const numeric = Number.parseInt(value, 10);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function formatSecondsToDuration(totalSeconds: number) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
 const listContentInput = z
   .object({
     userId: z.string().min(1).optional(),
@@ -118,8 +169,7 @@ export const contentRouter = {
       title: input.title,
       author: input.author,
       narrator: null,
-      duration: input.duration?.trim() || "00:00",
-      audio: input.audio || "", // Added audio here
+      duration: null,
       cover: input.cover?.trim() || NoAudiobookCover.src,
       description: input.description?.trim() || "",
       tags: input.tags?.join(", ") || null,
@@ -128,6 +178,45 @@ export const contentRouter = {
       publisher: input.publisher?.trim() || input.author,
       category: input.category?.trim() || "General",
     });
+
+    return { id };
+  }),
+
+  createAudiobookChapter: os.input(z.object({
+    audiobookId: z.string().min(1),
+    title: z.string().min(1).max(200),
+    description: z.string().max(5000).optional(),
+    audio: z.string().url().optional(),
+    duration: z.string().max(50).optional(),
+    narrator: z.string().max(120).optional(),
+  })).handler(async ({ input }) => {
+    const id = crypto.randomUUID();
+    const chapterDuration = input.duration?.trim() || "00:00";
+
+    await db.insert(audiobookChapters).values({
+      id,
+      audiobookId: input.audiobookId,
+      title: input.title,
+      duration: chapterDuration,
+      audio: input.audio || "",
+      description: input.description?.trim() || "",
+      narrator: input.narrator?.trim() || null,
+    });
+
+    const allChapters = await db
+      .select({ duration: audiobookChapters.duration })
+      .from(audiobookChapters)
+      .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+
+    const totalDurationSeconds = allChapters.reduce(
+      (sum, chapter) => sum + parseDurationToSeconds(chapter.duration),
+      0,
+    );
+
+    await db
+      .update(audiobooks)
+      .set({ duration: formatSecondsToDuration(totalDurationSeconds) })
+      .where(eq(audiobooks.id, input.audiobookId));
 
     return { id };
   }),
@@ -141,16 +230,22 @@ export const contentRouter = {
   })).handler(async ({ input }) => {
     const today = new Date().toISOString().slice(0, 10);
     const id = crypto.randomUUID();
+    const episodeDuration = input.duration?.trim() || "00:00";
 
     await db.insert(podcastEpisodes).values({
       id,
       podcastId: input.podcastId,
       title: input.title,
-      duration: input.duration?.trim() || "00:00",
+      duration: episodeDuration,
       audio: input.audio || "",
       description: input.description?.trim() || "",
       date: today,
     });
+
+    await db
+      .update(podcasts)
+      .set({ duration: episodeDuration })
+      .where(eq(podcasts.id, input.podcastId));
 
     return { id };
   }),
@@ -253,7 +348,6 @@ export const contentRouter = {
         narrator: audiobooks.narrator,
         duration: audiobooks.duration,
         cover: audiobooks.cover,
-        audio: audiobooks.audio,
         description: audiobooks.description,
         tags: audiobooks.tags,
         releaseDate: audiobooks.releaseDate,
@@ -268,8 +362,12 @@ export const contentRouter = {
     if (audiobook[0]) {
       const chapters = await db
         .select({
+          id: audiobookChapters.id,
           title: audiobookChapters.title,
           duration: audiobookChapters.duration,
+          audio: audiobookChapters.audio,
+          description: audiobookChapters.description,
+          narrator: audiobookChapters.narrator,
         })
         .from(audiobookChapters)
         .where(eq(audiobookChapters.audiobookId, input.id))
