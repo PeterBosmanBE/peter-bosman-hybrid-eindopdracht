@@ -2,15 +2,18 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/src/server/auth/auth-client";
-import { orpc } from "@/src/server/orpc/client";import {
+import { orpc } from "@/src/server/orpc/client";
+import {
   Dialog,
 } from "@/src/components/ui/dialog";
 import { FilterType } from "@/src/types/FilterType";
 import { DashboardTabType } from "@/src/types/DashboardTabType";
 import CreateShow from "../create-show";
 import { Button } from "../ui/button";
+import EditShow from "../edit-show";
+import { toast } from "sonner";
 
 function formatReleaseDate(date: string | null) {
   if (!date) return "-";
@@ -24,8 +27,27 @@ function formatReleaseDate(date: string | null) {
       });
 }
 
-export default function Content({ onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {  const [createOpen, setCreateOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");  const { data: session, isPending: isSessionPending } = authClient.useSession();
+type DashboardItem = {
+  id: string;
+  type: "audiobook" | "podcast";
+  title: string;
+  author: string;
+  description: string;
+  duration: string;
+  tags: string | null;
+  language: string | null;
+  cover: string;
+  releaseDate: string | null;
+};
+
+export default function Content({ onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {
+  const queryClient = useQueryClient();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [editingItem, setEditingItem] = useState<DashboardItem | null>(null);
+
+  const { data: session, isPending: isSessionPending } = authClient.useSession();
 
   const contentQuery = useQuery({
     ...orpc.content.list.queryOptions({
@@ -37,8 +59,44 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
     enabled: !isSessionPending && Boolean(session?.user?.id),
   });
 
-  const items = contentQuery.data?.items ?? [];
+  const deleteContentMutation = useMutation(
+    orpc.content.delete.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.content.list.queryKey() });
+        toast.success("Content deleted");
+      },
+      onError: () => {
+        toast.error("Failed to delete content");
+      },
+    }),
+  );
+
+  const items: DashboardItem[] = contentQuery.data?.items ?? [];
   const totals = contentQuery.data?.totals ?? { all: 0, audiobooks: 0, podcasts: 0 };
+
+  function openEditDialog(item: DashboardItem) {
+    setEditingItem(item);
+    setEditOpen(true);
+  }
+
+  async function handleDelete(item: DashboardItem) {
+    if (!session?.user?.id) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete \"${item.title}\"? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    await deleteContentMutation.mutateAsync({
+      userId: session.user.id,
+      id: item.id,
+      type: item.type,
+    });
+  }
+
+  const isDeleting = deleteContentMutation.isPending;
+
   return (
     <>
       {/* Create Show/Book Dialog */}
@@ -48,6 +106,21 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
           goToUploadTab={() => onTabChange?.("upload")}
         />
       </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        {editingItem && (
+          <EditShow
+            item={editingItem}
+            setEditOpen={(open) => {
+              setEditOpen(open);
+              if (!open) {
+                setEditingItem(null);
+              }
+            }}
+          />
+        )}
+      </Dialog>
+
       <div>
         <div className="flex items-center justify-between mb-6">
             <div className="flex gap-2">
@@ -151,12 +224,25 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
                                   <span style={{ color: '#232F3E' }}>{formatReleaseDate(item.releaseDate)}</span>
                                 </td>
                                 <td className="px-6 py-4">
-                                  {item.type === 'audiobook' && (
-                                      "audiobooks"
-                                  )}
-                                  {item.type === 'podcast' && (
-                                      "podcasts"
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openEditDialog(item)}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleDelete(item)}
+                                      disabled={isDeleting}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}

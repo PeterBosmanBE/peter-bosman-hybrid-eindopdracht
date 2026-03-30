@@ -1,11 +1,12 @@
 import { os } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
-import { asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import * as z from "zod";
 import { db } from "@/src/server/db/client";
 import {
   audiobookChapters,
   audiobooks,
+  bookmarks,
   podcastEpisodes,
   podcasts,
 } from "@/src/server/db/schema";
@@ -45,6 +46,31 @@ const createContentInput = z.object({
   duration: z.string().max(50).optional(),
   language: z.enum(LANGUAGES).optional(),
   publisher: z.string().max(120).optional(),
+});
+
+const updateContentInput = z.object({
+  userId: z.string().min(1),
+  id: z.string().min(1),
+  type: z.enum(["audiobook", "podcast"]),
+  title: z.string().min(1).max(200),
+  author: z.string().min(1).max(120),
+  description: z.string().max(5000).optional(),
+  tags: z
+    .array(z.string())
+    .optional()
+    .refine(
+      (values) => !values || values.every((value) => APPROVED_TAGS.includes(value as (typeof APPROVED_TAGS)[number])),
+      "One or more tags are not approved",
+    ),
+  cover: z.string().url().optional(),
+  duration: z.string().max(50).optional(),
+  language: z.enum(LANGUAGES).optional(),
+});
+
+const deleteContentInput = z.object({
+  userId: z.string().min(1),
+  id: z.string().min(1),
+  type: z.enum(["audiobook", "podcast"]),
 });
 
 export const contentRouter = {
@@ -141,6 +167,7 @@ export const contentRouter = {
               id: audiobooks.id,
               title: audiobooks.title,
               author: audiobooks.author,
+              description: audiobooks.description,
               duration: audiobooks.duration,
               tags: audiobooks.tags,
               language: audiobooks.language,
@@ -154,6 +181,7 @@ export const contentRouter = {
               id: audiobooks.id,
               title: audiobooks.title,
               author: audiobooks.author,
+              description: audiobooks.description,
               duration: audiobooks.duration,
               tags: audiobooks.tags,
               language: audiobooks.language,
@@ -170,6 +198,7 @@ export const contentRouter = {
               id: podcasts.id,
               title: podcasts.title,
               author: podcasts.author,
+              description: podcasts.description,
               duration: podcasts.duration,
               tags: podcasts.tags,
               language: podcasts.language,
@@ -183,6 +212,7 @@ export const contentRouter = {
               id: podcasts.id,
               title: podcasts.title,
               author: podcasts.author,
+              description: podcasts.description,
               duration: podcasts.duration,
               tags: podcasts.tags,
               language: podcasts.language,
@@ -326,5 +356,83 @@ export const contentRouter = {
     }
 
     throw new ORPCError("NOT_FOUND");
+  }),
+
+  update: os.input(updateContentInput).handler(async ({ input }) => {
+    const payload = {
+      title: input.title.trim(),
+      author: input.author.trim(),
+      description: input.description?.trim() || "",
+      duration: input.duration?.trim() || "00:00",
+      language: input.language?.trim() || "English",
+      cover: input.cover?.trim(),
+      tags: input.tags?.length ? input.tags.join(", ") : null,
+    };
+
+    if (input.type === "audiobook") {
+      const result = await db
+        .update(audiobooks)
+        .set(payload)
+        .where(and(eq(audiobooks.id, input.id), eq(audiobooks.userId, input.userId)))
+        .returning({ id: audiobooks.id });
+
+      if (!result[0]) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      return { id: result[0].id };
+    }
+
+    const result = await db
+      .update(podcasts)
+      .set(payload)
+      .where(and(eq(podcasts.id, input.id), eq(podcasts.userId, input.userId)))
+      .returning({ id: podcasts.id });
+
+    if (!result[0]) {
+      throw new ORPCError("NOT_FOUND");
+    }
+
+    return { id: result[0].id };
+  }),
+
+  delete: os.input(deleteContentInput).handler(async ({ input }) => {
+    if (input.type === "audiobook") {
+      const owned = await db
+        .select({ id: audiobooks.id })
+        .from(audiobooks)
+        .where(and(eq(audiobooks.id, input.id), eq(audiobooks.userId, input.userId)))
+        .limit(1);
+
+      if (!owned[0]) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      await db.delete(audiobookChapters).where(eq(audiobookChapters.audiobookId, input.id));
+      await db
+        .delete(bookmarks)
+        .where(and(eq(bookmarks.contentId, input.id), eq(bookmarks.contentType, "audiobook")));
+      await db.delete(audiobooks).where(eq(audiobooks.id, input.id));
+
+      return { id: input.id };
+    }
+
+    const owned = await db
+      .select({ id: podcasts.id })
+      .from(podcasts)
+      .where(and(eq(podcasts.id, input.id), eq(podcasts.userId, input.userId)))
+      .limit(1);
+
+    if (!owned[0]) {
+      throw new ORPCError("NOT_FOUND");
+    }
+
+    await db.delete(podcastEpisodes).where(eq(podcastEpisodes.podcastId, input.id));
+    await db
+      .delete(bookmarks)
+      .where(and(eq(bookmarks.contentId, input.id), eq(bookmarks.contentType, "podcast")));
+    await db.delete(podcasts).where(eq(podcasts.id, input.id));
+
+    return { id: input.id };
   }),
 };
