@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/src/server/auth/auth-client";
 import { orpc } from "@/src/server/orpc/client";
+import { redirect } from "next/navigation";
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -34,23 +35,7 @@ export default function LibraryPage() {
   }
 
   if (!session?.user?.id) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#FAFAF8" }}>
-        <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold mb-3" style={{ color: "#232F3E" }}>Sign in to view your library</h1>
-          <p className="mb-6" style={{ color: "#666666" }}>
-            Save podcasts and audiobooks, then access them all in one place.
-          </p>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center px-6 py-3 rounded-full font-semibold"
-            style={{ background: "#F7941D", color: "white" }}
-          >
-            Go to sign in
-          </Link>
-        </div>
-      </div>
-    );
+    redirect("/sign-in");
   }
 
   const items = (libraryQuery.data?.items ?? []).filter((item): item is NonNullable<typeof item> => Boolean(item));
