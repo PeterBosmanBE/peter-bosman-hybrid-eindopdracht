@@ -7,7 +7,6 @@ import { Textarea } from "@/src/components/ui/textarea";
 import { cn } from "@/src/lib/utils";
 import { Dropzone } from "../dropzone";
 import { Icons } from "@/src/components/icons";
-import Image from "next/image";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { orpc } from "@/src/server/orpc/client";
 import { authClient } from "@/src/server/auth/auth-client";
@@ -15,22 +14,59 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Progress } from "@/src/components/ui/progress";
 import { upload } from "@vercel/blob/client";
-import { AUDIOBOOK_TAGS } from "@/src/types/Tags";
-import { LANGUAGES } from "@/src/types/Languages";
-import type { Language } from "@/src/types/Languages";
-
 type AudioType = "podcast" | "audiobook" | null;
 
 interface UploadData {
   file: File | null;
   title: string;
   description: string;
-  language: Language;
-  tags: string[];
-  thumbnail: File | null;
-  thumbnailPreview: string | null;
   audioType: AudioType;
   podcastId: string;
+  audiobookId: string;
+  narrator: string;
+}
+
+function formatSecondsToDuration(totalSeconds: number) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function getAudioDurationSeconds(file: File) {
+  return new Promise<number>((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+      audio.remove();
+    };
+
+    audio.onloadedmetadata = () => {
+      const durationSeconds = Number.isFinite(audio.duration)
+        ? Math.max(0, Math.floor(audio.duration))
+        : 0;
+      cleanup();
+      resolve(durationSeconds);
+    };
+
+    audio.onerror = () => {
+      cleanup();
+      resolve(0);
+    };
+
+    audio.src = objectUrl;
+  });
 }
 
 const steps = [
@@ -49,86 +85,54 @@ export default function Upload() {
     }),
     enabled: !!session?.user?.id,
   });
+  const audiobooksQuery = useQuery({
+    ...orpc.content.list.queryOptions({
+      input: {
+        userId: session?.user?.id ?? "",
+        type: "audiobook",
+      },
+    }),
+    enabled: !!session?.user?.id,
+  });
   const userPodcasts = podcastsQuery.data?.items ?? [];
+  const userAudiobooks = audiobooksQuery.data?.items ?? [];
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [languageQuery, setLanguageQuery] = useState("");
-  const [audiobookTagQuery, setAudiobookTagQuery] = useState("");
+  const [fileDuration, setFileDuration] = useState("00:00");
   const [data, setData] = useState<UploadData>({
     file: null,
     title: "",
     description: "",
-    language: "English",
-    tags: [],
-    thumbnail: null,
-    thumbnailPreview: null,
     audioType: null,
     podcastId: "",
+    audiobookId: "",
+    narrator: "",
   });
 
-  const toggleAudiobookTag = (tag: string) => {
-    setData((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(tag)
-        ? prev.tags.filter((item) => item !== tag)
-        : [...prev.tags, tag],
-    }));
-  };
-
-  const filteredAudiobookTags = AUDIOBOOK_TAGS.filter(
-    (tag) =>
-      !data.tags.includes(tag) &&
-      tag.toLowerCase().includes(audiobookTagQuery.trim().toLowerCase()),
-  );
-
-  const filteredLanguages = LANGUAGES.filter((language) =>
-    language.toLowerCase().includes(languageQuery.trim().toLowerCase()),
-  );
+  const selectFile = useCallback(async (file: File) => {
+    setData((prev) => ({ ...prev, file }));
+    const durationSeconds = await getAudioDurationSeconds(file);
+    setFileDuration(formatSecondsToDuration(durationSeconds));
+  }, []);
 
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) {
-        setData((prev) => ({ ...prev, file }));
-      }
+      if (!file) return;
+      void selectFile(file);
     },
-    [],
+    [selectFile],
   );
-
-  const handleThumbnailUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setData((prev) => ({
-            ...prev,
-            thumbnail: file,
-            thumbnailPreview: reader.result as string,
-          }));
-        };
-        reader.readAsDataURL(file);
-      }
-    },
-    [],
-  );
-
-  const removeThumbnail = () => {
-    setData((prev) => ({
-      ...prev,
-      thumbnail: null,
-      thumbnailPreview: null,
-    }));
-  };
 
   const canProceedToStep2 = data.file !== null;
   const canSubmit =
     data.title.trim() &&
     data.audioType &&
-    (data.audioType === "audiobook" ||
-      (data.audioType === "podcast" && data.podcastId)) &&
+    (data.audioType === "audiobook"
+      ? data.audiobookId
+      : data.audioType === "podcast" && data.podcastId) &&
     !isSubmitting;
   const router = useRouter();
 
@@ -144,14 +148,14 @@ export default function Upload() {
     }),
   );
 
-  const createAudiobookMutation = useMutation(
-    orpc.content.createAudiobook.mutationOptions({
-      onSuccess: ({ id }) => {
-        toast.success("Upload complete! Your audiobook has been submitted.");
-        router.push(`/audiobook/${id}`);
+  const createAudiobookChapterMutation = useMutation(
+    orpc.content.createAudiobookChapter.mutationOptions({
+      onSuccess: () => {
+        toast.success("Upload complete! Your chapter has been submitted.");
+        router.push(`/audiobook/${data.audiobookId}`);
       },
       onError: () => {
-        toast.error("Failed to submit audiobook.");
+        toast.error("Failed to submit chapter.");
       },
     }),
   );
@@ -162,12 +166,14 @@ export default function Upload() {
     setIsSubmitting(true);
     setUploadProgress(0);
     try {
-      /* First upload standard files. For now fake since we can assume file exists but uploads api uses 'File' obj.
-       Upload file: a proper app would upload 'data.file' via a mutation and grab URL here. */
       let audioUrl = "";
-      let coverUrl = "";
+      let finalDuration = fileDuration;
 
       if (data.file) {
+        const durationSeconds = await getAudioDurationSeconds(data.file);
+        finalDuration = formatSecondsToDuration(durationSeconds);
+        setFileDuration(finalDuration);
+
         toast.info("Uploading audio...");
         const newBlob = await upload(data.file.name, data.file, {
           access: "public",
@@ -178,15 +184,6 @@ export default function Upload() {
         });
         audioUrl = newBlob.url;
       }
-
-      if (data.thumbnail) {
-        toast.info("Uploading thumbnail...");
-        const newThumbnailBlob = await upload(data.thumbnail.name, data.thumbnail, {
-          access: "public",
-          handleUploadUrl: "/api/client-upload",
-        });
-        coverUrl = newThumbnailBlob.url;
-      }
       setUploadProgress(100);
 
       if (data.audioType === "podcast" && data.podcastId) {
@@ -195,18 +192,16 @@ export default function Upload() {
           title: data.title,
           description: data.description,
           audio: audioUrl,
-          // fake duration based on some param
+          duration: finalDuration,
         });
-      } else if (data.audioType === "audiobook") {
-        await createAudiobookMutation.mutateAsync({
-          userId: session?.user?.id ?? "",
+      } else if (data.audioType === "audiobook" && data.audiobookId) {
+        await createAudiobookChapterMutation.mutateAsync({
+          audiobookId: data.audiobookId,
           title: data.title,
-          author: session?.user?.name ?? "Unknown Author",
           description: data.description,
-          language: data.language,
-          tags: data.tags,
           audio: audioUrl,
-          cover: coverUrl,
+          duration: finalDuration,
+          narrator: data.narrator || undefined,
         });
       }
     } catch (err) {
@@ -284,7 +279,7 @@ export default function Upload() {
               <Dropzone
                 onFileSelected={(files) => {
                   if (files?.[0]) {
-                    setData((prev) => ({ ...prev, file: files[0] }));
+                    void selectFile(files[0]);
                   }
                 }}
               />
@@ -298,6 +293,9 @@ export default function Upload() {
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {(data.file.size / 1_000_000).toFixed(2)} MB
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {fileDuration}
                     </p>
                   </div>
                 </div>
@@ -369,6 +367,9 @@ export default function Upload() {
               <p className="text-sm text-muted-foreground">
                 {data.file && (data.file.size / 1_000_000).toFixed(2)} MB
               </p>
+              <p className="text-sm text-muted-foreground">
+                Duration: {fileDuration}
+              </p>
             </div>
             <Icons.check className="w-5 h-5 text-primary" />
           </div>
@@ -405,129 +406,56 @@ export default function Upload() {
           </div>
 
           {data.audioType === "audiobook" && (
-            <div className="space-y-2">
+            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
               <label className="text-sm font-semibold uppercase tracking-wide text-foreground">
-                Language
+                Select Audiobook *
               </label>
-              <Input
-                value={languageQuery}
-                onChange={(e) => setLanguageQuery(e.target.value)}
-                placeholder="Search languages..."
-                className="border-2 border-border focus:border-primary"
-              />
-              {filteredLanguages.length > 0 && (
-                <div className="max-h-32 overflow-y-auto rounded-md border border-border bg-background p-2 flex flex-wrap gap-2">
-                  {filteredLanguages.map((language) => (
-                    <Button
-                      key={language}
-                      type="button"
-                      variant="outline"
-                      className="h-8 px-3"
-                      onClick={() => {
-                        setData((prev) => ({ ...prev, language }));
-                        setLanguageQuery("");
-                      }}
-                      style={{
-                        background: data.language === language ? "#232F3E" : "#FFFFFF",
-                        color: data.language === language ? "#FFFFFF" : "#232F3E",
-                        borderColor: data.language === language ? "#232F3E" : "#E8E8E8",
-                      }}
-                    >
-                      {language}
-                    </Button>
+              {audiobooksQuery.isLoading ? (
+                <div className="p-3 text-sm text-muted-foreground border-2 border-border rounded-sm">
+                  Loading audiobooks...
+                </div>
+              ) : userAudiobooks.length > 0 ? (
+                <select
+                  aria-label="Select an audiobook"
+                  title="Select an audiobook"
+                  className="w-full p-3 border-2 border-border rounded-sm bg-background focus:border-primary outline-none transition-colors"
+                  value={data.audiobookId}
+                  onChange={(e) =>
+                    setData((prev) => ({ ...prev, audiobookId: e.target.value }))
+                  }
+                >
+                  <option value="" disabled>
+                    Select an audiobook
+                  </option>
+                  {userAudiobooks.map((audiobook) => (
+                    <option key={audiobook.id} value={audiobook.id}>
+                      {audiobook.title}
+                    </option>
                   ))}
+                </select>
+              ) : (
+                <div className="p-3 text-sm text-destructive border-2 border-destructive/20 rounded-sm bg-destructive/5">
+                  You don&apos;t have any audiobooks yet. Please create one first!
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">Selected: {data.language}</p>
             </div>
           )}
 
           {data.audioType === "audiobook" && (
             <div className="space-y-2">
               <label className="text-sm font-semibold uppercase tracking-wide text-foreground">
-                Tags
+                Narrator
               </label>
-                <Input
-                  value={audiobookTagQuery}
-                  onChange={(e) => setAudiobookTagQuery(e.target.value)}
-                  placeholder="Search Tags..."
-                  className="border-2 border-border focus:border-primary"
-                />
-                {filteredAudiobookTags.length > 0 && (
-                  <div className="max-h-32 overflow-y-auto rounded-md border border-border bg-background p-2 flex flex-wrap gap-2">
-                    {filteredAudiobookTags.map((tag) => (
-                      <Button
-                        key={tag}
-                        type="button"
-                        variant="outline"
-                        className="h-8 px-3"
-                        onClick={() => {
-                          toggleAudiobookTag(tag);
-                          setAudiobookTagQuery("");
-                        }}
-                      >
-                        {tag}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {data.tags.map((tag) => (
-                    <Button
-                      key={tag}
-                      type="button"
-                      className="h-8 px-3"
-                      onClick={() => toggleAudiobookTag(tag)}
-                    >
-                      {tag} x
-                    </Button>
-                  ))}
-                </div>
+              <Input
+                placeholder="Optional narrator name"
+                value={data.narrator}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, narrator: e.target.value }))
+                }
+                className="border-2 border-border focus:border-primary"
+              />
             </div>
           )}
-
-          {/* Thumbnail */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold uppercase tracking-wide text-foreground">
-              Thumbnail
-            </label>
-            {!data.thumbnailPreview ? (
-              <label className="cursor-pointer block">
-                <div className="border-2 border-dashed border-border rounded-sm p-6 text-center hover:border-primary/50 transition-colors">
-                  <Icons.image className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload thumbnail
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG up to 5MB
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleThumbnailUpload}
-                  className="hidden"
-                />
-              </label>
-            ) : (
-              <div className="relative inline-block">
-                <Image
-                  src={data.thumbnailPreview}
-                  alt="Thumbnail preview"
-                  width={100}
-                  height={100}
-                  className="w-32 h-32 object-cover rounded-sm border-2 border-border"
-                />
-                <button
-                  type="button"
-                  onClick={removeThumbnail}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90"
-                >
-                  <Icons.x className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
 
           {/* Audio Type */}
           <div className="space-y-3">

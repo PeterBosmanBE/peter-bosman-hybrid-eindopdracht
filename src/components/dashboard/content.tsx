@@ -40,7 +40,7 @@ type DashboardItem = {
   releaseDate: string | null;
 };
 
-export default function Content({ onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {
+export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -71,7 +71,10 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
     }),
   );
 
-  const items: DashboardItem[] = contentQuery.data?.items ?? [];
+  const items: DashboardItem[] = (contentQuery.data?.items ?? []).map((item) => ({
+    ...item,
+    duration: item.duration ?? "00:00",
+  }));
   const totals = contentQuery.data?.totals ?? { all: 0, audiobooks: 0, podcasts: 0 };
 
   function openEditDialog(item: DashboardItem) {
@@ -101,10 +104,7 @@ export default function Content({ onTabChange }: { onTabChange?: (tab: Dashboard
     <>
       {/* Create Show/Book Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <CreateShow
-          setCreateOpen={setCreateOpen}
-          goToUploadTab={() => onTabChange?.("upload")}
-        />
+        <CreateShow setCreateOpen={setCreateOpen} />
       </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
