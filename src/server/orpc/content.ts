@@ -9,8 +9,11 @@ import {
   podcastEpisodes,
   podcasts,
 } from "@/src/server/db/schema";
+import { AUDIOBOOK_TAGS, PODCAST_TAGS } from "@/src/types/Tags";
 import NoPodcastCover from "@/public/no-podcast-cover.webp";
 import NoAudiobookCover from "@/public/no-audiobook-cover.webp";
+
+const APPROVED_TAGS = [...new Set([...PODCAST_TAGS, ...AUDIOBOOK_TAGS])];
 
 const listContentInput = z
   .object({
@@ -28,6 +31,13 @@ const createContentInput = z.object({
   title: z.string().min(1).max(200),
   author: z.string().min(1).max(120),
   description: z.string().max(5000).optional(),
+  tags: z
+    .array(z.string())
+    .optional()
+    .refine(
+      (values) => !values || values.every((value) => APPROVED_TAGS.includes(value as (typeof APPROVED_TAGS)[number])),
+      "One or more tags are not approved",
+    ),
   category: z.string().max(120).optional(),
   cover: z.string().url().optional(),
   audio: z.string().url().optional(),
@@ -49,6 +59,7 @@ export const contentRouter = {
       duration: input.duration?.trim() || "00:00",
       cover: input.cover?.trim() || NoPodcastCover.src,
       description: input.description?.trim() || "",
+      tags: input.tags?.join(", ") || null,
       releaseDate: today,
       language: input.language?.trim() || "English",
       publisher: input.publisher?.trim() || input.author,
@@ -84,6 +95,7 @@ export const contentRouter = {
       audio: input.audio || "", // Added audio here
       cover: input.cover?.trim() || NoAudiobookCover.src,
       description: input.description?.trim() || "",
+      tags: input.tags?.join(", ") || null,
       releaseDate: today,
       language: input.language?.trim() || "English",
       publisher: input.publisher?.trim() || input.author,
@@ -129,6 +141,7 @@ export const contentRouter = {
               title: audiobooks.title,
               author: audiobooks.author,
               duration: audiobooks.duration,
+              tags: audiobooks.tags,
               cover: audiobooks.cover,
               releaseDate: audiobooks.releaseDate,
             })
@@ -140,6 +153,7 @@ export const contentRouter = {
               title: audiobooks.title,
               author: audiobooks.author,
               duration: audiobooks.duration,
+              tags: audiobooks.tags,
               cover: audiobooks.cover,
               releaseDate: audiobooks.releaseDate,
             })
@@ -154,6 +168,7 @@ export const contentRouter = {
               title: podcasts.title,
               author: podcasts.author,
               duration: podcasts.duration,
+              tags: podcasts.tags,
               cover: podcasts.cover,
               releaseDate: podcasts.releaseDate,
             })
@@ -165,6 +180,7 @@ export const contentRouter = {
               title: podcasts.title,
               author: podcasts.author,
               duration: podcasts.duration,
+              tags: podcasts.tags,
               cover: podcasts.cover,
               releaseDate: podcasts.releaseDate,
             })
@@ -204,6 +220,7 @@ export const contentRouter = {
         cover: audiobooks.cover,
         audio: audiobooks.audio,
         description: audiobooks.description,
+        tags: audiobooks.tags,
         releaseDate: audiobooks.releaseDate,
         language: audiobooks.language,
         publisher: audiobooks.publisher,
@@ -255,6 +272,7 @@ export const contentRouter = {
         duration: podcasts.duration,
         cover: podcasts.cover,
         description: podcasts.description,
+        tags: podcasts.tags,
         releaseDate: podcasts.releaseDate,
         language: podcasts.language,
         publisher: podcasts.publisher,

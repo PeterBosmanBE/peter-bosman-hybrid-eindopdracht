@@ -64,6 +64,13 @@
       "when": 1774814577118,
       "tag": "0008_slippery_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774895665574,
+      "tag": "0009_pretty_william_stryker",
+      "breakpoints": true
     }
   ]
 }
