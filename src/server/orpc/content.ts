@@ -184,7 +184,7 @@ export const contentRouter = {
 
   createAudiobookChapter: os.input(z.object({
     audiobookId: z.string().min(1),
-    title: z.string().min(1).max(200),
+    title: z.string().max(200).optional(),
     description: z.string().max(5000).optional(),
     audio: z.string().url().optional(),
     duration: z.string().max(50).optional(),
@@ -193,10 +193,18 @@ export const contentRouter = {
     const id = crypto.randomUUID();
     const chapterDuration = input.duration?.trim() || "00:00";
 
+    const existingChapters = await db
+      .select({ id: audiobookChapters.id })
+      .from(audiobookChapters)
+      .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+
+    const nextChapterNumber = existingChapters.length + 1;
+    const chapterTitle = input.title?.trim() || `Chapter ${nextChapterNumber}`;
+
     await db.insert(audiobookChapters).values({
       id,
       audiobookId: input.audiobookId,
-      title: input.title,
+      title: chapterTitle,
       duration: chapterDuration,
       audio: input.audio || "",
       description: input.description?.trim() || "",

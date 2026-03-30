@@ -111,6 +111,20 @@ export default function Upload() {
     narrator: "",
   });
 
+  const audiobookDetailQuery = useQuery({
+    ...orpc.content.detail.queryOptions({
+      input: {
+        id: data.audiobookId || "__unselected__",
+      },
+    }),
+    enabled: data.audioType === "audiobook" && Boolean(data.audiobookId),
+  });
+
+  const nextChapterNumber =
+    audiobookDetailQuery.data?.content?.type === "audiobook"
+      ? audiobookDetailQuery.data.content.chapters.length + 1
+      : null;
+
   const selectFile = useCallback(async (file: File) => {
     setData((prev) => ({ ...prev, file }));
     const durationSeconds = await getAudioDurationSeconds(file);
@@ -128,8 +142,8 @@ export default function Upload() {
 
   const canProceedToStep2 = data.file !== null;
   const canSubmit =
-    data.title.trim() &&
     data.audioType &&
+    (data.audioType === "audiobook" || data.title.trim()) &&
     (data.audioType === "audiobook"
       ? data.audiobookId
       : data.audioType === "podcast" && data.podcastId) &&
@@ -197,7 +211,7 @@ export default function Upload() {
       } else if (data.audioType === "audiobook" && data.audiobookId) {
         await createAudiobookChapterMutation.mutateAsync({
           audiobookId: data.audiobookId,
-          title: data.title,
+          title: data.title || undefined,
           description: data.description,
           audio: audioUrl,
           duration: finalDuration,
@@ -377,10 +391,14 @@ export default function Upload() {
           {/* Title */}
           <div className="space-y-2">
             <label className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              Title *
+              {data.audioType === "audiobook" ? "Chapter Name (Optional)" : "Title *"}
             </label>
             <Input
-              placeholder="Enter a title for your audio"
+              placeholder={
+                data.audioType === "audiobook"
+                  ? "Enter chapter name (e.g. The Journey Begins)"
+                  : "Enter a title for your audio"
+              }
               value={data.title}
               onChange={(e) =>
                 setData((prev) => ({ ...prev, title: e.target.value }))
@@ -436,6 +454,13 @@ export default function Upload() {
               ) : (
                 <div className="p-3 text-sm text-destructive border-2 border-destructive/20 rounded-sm bg-destructive/5">
                   You don&apos;t have any audiobooks yet. Please create one first!
+                </div>
+              )}
+              {data.audiobookId && (
+                <div className="p-3 text-sm text-muted-foreground border-2 border-border rounded-sm bg-muted/30">
+                  {nextChapterNumber
+                    ? `This upload will be Chapter ${nextChapterNumber} for the selected audiobook.`
+                    : "Loading next chapter number..."}
                 </div>
               )}
             </div>
