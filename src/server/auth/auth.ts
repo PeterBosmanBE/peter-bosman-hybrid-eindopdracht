@@ -5,6 +5,7 @@ import * as schema from "@/src/server/db/schema";
 import { dash } from "@better-auth/infra";
 
 export const auth = betterAuth({
+    appName: "Chapter",
     database: drizzleAdapter(db, {
         provider: "pg",
         schema,
@@ -29,5 +30,10 @@ export const auth = betterAuth({
     },
     plugins: [
         dash()
-    ]
+    ],
+    advanced: {
+        ipAddress: {
+            ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
+        },
+    },
 });
