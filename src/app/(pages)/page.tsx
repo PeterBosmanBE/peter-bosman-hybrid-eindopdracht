@@ -1,133 +1,23 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import "./home.css"
+import Image from "next/image";
+import { db } from "@/src/server/db/client";
+import { audiobooks, podcasts as podcastsTable } from "@/src/server/db/schema";
+import { authClient } from "@/src/server/auth/auth-client";
 
-const featuredContent = [
-  {
-    id: 1,
-    title: "The Psychology of Money",
-    author: "Morgan Housel",
-    type: "audiobook",
-    duration: "5h 48m",
-    cover:
-      "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=400&fit=crop",
-    narrator: "Chris Hill",
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    title: "Sapiens",
-    author: "Yuval Noah Harari",
-    type: "audiobook",
-    duration: "15h 17m",
-    cover:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-    narrator: "Derek Perkins",
-    rating: 4.7,
-  },
-  {
-    id: 3,
-    title: "Atomic Habits",
-    author: "James Clear",
-    type: "audiobook",
-    duration: "5h 35m",
-    cover:
-      "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=400&fit=crop",
-    narrator: "James Clear",
-    rating: 4.9,
-  },
-  {
-    id: 4,
-    title: "Think Again",
-    author: "Adam Grant",
-    type: "audiobook",
-    duration: "6h 40m",
-    cover:
-      "https://images.unsplash.com/photo-1461360228754-6e81c478b882?w=400&h=400&fit=crop",
-    narrator: "Adam Grant",
-    rating: 4.6,
-  },
-];
+async function getRandomItems<T>(items: T[], count: number): Promise<T[]> {
+  const shuffled = [...items].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
-const continueListening = [
-  {
-    id: 5,
-    title: "Deep Work",
-    author: "Cal Newport",
-    progress: 65,
-    timeLeft: "2h 42m",
-    cover:
-      "https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=400&h=400&fit=crop",
-  },
-  {
-    id: 6,
-    title: "Range",
-    author: "David Epstein",
-    progress: 32,
-    timeLeft: "6h 48m",
-    cover:
-      "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop",
-  },
-];
-
-const podcasts = [
-  {
-    id: 7,
-    title: "StartUp Podcast",
-    author: "Gimlet Media",
-    type: "podcast",
-    episodes: 124,
-    cover:
-      "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=400&fit=crop",
-    rating: 4.6,
-  },
-  {
-    id: 8,
-    title: "The Tim Ferriss Show",
-    author: "Tim Ferriss",
-    type: "podcast",
-    episodes: 680,
-    cover:
-      "https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=400&h=400&fit=crop",
-    rating: 4.8,
-  },
-  {
-    id: 9,
-    title: "How I Built This",
-    author: "Guy Raz",
-    type: "podcast",
-    episodes: 450,
-    cover:
-      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400&h=400&fit=crop",
-    rating: 4.7,
-  },
-  {
-    id: 10,
-    title: "WorkLife",
-    author: "Adam Grant",
-    type: "podcast",
-    episodes: 89,
-    cover:
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=400&fit=crop",
-    rating: 4.5,
-  },
-];
-
-const categories = [
-  "All",
-  "Business",
-  "Self-Development",
-  "History",
-  "Science",
-  "Fiction",
-  "Biography",
-];
-
-export default function Home() {
-  const [activeCategory, setActiveCategory] = useState("All");
-
+export default async function Home() {
+  const audioList = await db.select().from(audiobooks).limit(20);
+  const podcastList = await db.select().from(podcastsTable).limit(20);
+  
+  const featuredContent = await getRandomItems(audioList, 4);
+  const podcastsData = await getRandomItems(podcastList, 4);
+  
+  const session = await authClient.getSession();
   return (
     <div
       className="min-h-screen"
@@ -166,21 +56,34 @@ export default function Home() {
                 device, anytime.
               </p>
               <div className="flex flex-wrap gap-4">
-                <button
-                  className="px-8 py-3.5 rounded-full font-semibold transition-all hover:opacity-90"
-                  style={{ background: "#F7941D", color: "white" }}
-                >
-                  Start Free Trial
-                </button>
-                <button
-                  className="px-8 py-3.5 rounded-full font-semibold transition-all border hover:bg-white/10"
+                {session ? (
+                  <Link
+                    href="/library"
+                    className="px-8 py-3.5 rounded-full font-semibold transition-all hover:opacity-90 inline-block"
+                    style={{ background: "#F7941D", color: "white" }}
+                  >
+                    My Library
+                  </Link>
+                  ) : (
+                  <Link
+                    href="/sign-in"
+                    className="px-8 py-3.5 rounded-full font-semibold transition-all hover:opacity-90 inline-block"
+                    style={{ background: "#F7941D", color: "white" }}
+                  >
+                    Create a free account!
+                  </Link>
+                  )
+                }
+                <Link
+                  href="/search"
+                  className="px-8 py-3.5 rounded-full font-semibold transition-all border hover:bg-white/10 inline-block"
                   style={{
                     borderColor: "rgba(255,255,255,0.3)",
                     color: "white",
                   }}
                 >
-                  Browse Library
-                </button>
+                  {session ? "Search for some adventure" : "Browse Library"}
+                </Link>
               </div>
             </div>
             <div className="relative flex items-center justify-center">
@@ -188,18 +91,20 @@ export default function Home() {
                 {featuredContent.slice(0, 4).map((item, index) => (
                   <Link
                     key={item.id}
-                    href={`/details/${item.id}`}
+                    href={`/audiobook/${item.id}`}
                     className="book-card"
                     style={{
                       transform: index % 2 === 1 ? "translateY(20px)" : "",
                     }}
                   >
                     <div className="relative">
-                      <img
+                      <Image
                         src={item.cover}
                         alt={item.title}
-                        className="w-32 md:w-40 rounded-lg shadow-2xl"
-                        style={{ aspectRatio: "2/3", objectFit: "cover" }}
+                        width={160}
+                        height={240}
+                        className="rounded-lg shadow-2xl"
+                        style={{ objectFit: "cover" }}
                       />
                       <div className="book-shadow absolute -bottom-2 left-2 right-2 h-4 rounded-full bg-black/20 blur-md"></div>
                     </div>
@@ -211,104 +116,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Continue Listening */}
-      {continueListening.length > 0 && (
-        <section className="px-6 py-10 max-w-7xl mx-auto">
-          <h2
-            className="font-serif text-2xl font-bold mb-6"
-            style={{ color: "#232F3E" }}
-          >
-            Continue Listening
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {continueListening.map((item) => (
-              <Link
-                key={item.id}
-                href={`/listen/${item.id}`}
-                className="flex items-center gap-4 p-4 rounded-xl border transition-all hover:shadow-lg"
-                style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}
-              >
-                <img
-                  src={item.cover}
-                  alt={item.title}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className="font-serif font-bold truncate"
-                    style={{ color: "#232F3E" }}
-                  >
-                    {item.title}
-                  </h3>
-                  <p className="text-sm" style={{ color: "#666666" }}>
-                    {item.author}
-                  </p>
-                  <div className="mt-3">
-                    <div
-                      className="h-1.5 rounded-full overflow-hidden"
-                      style={{ background: "#E8E8E8" }}
-                    >
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${item.progress}%`,
-                          background: "#F7941D",
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs mt-1" style={{ color: "#666666" }}>
-                      {item.timeLeft} left
-                    </p>
-                  </div>
-                </div>
-                <button
-                  className="w-12 h-12 rounded-full flex items-center justify-center transition-colors shrink-0"
-                  style={{ background: "#F7941D" }}
-                >
-                  <svg
-                    className="w-5 h-5 text-white ml-0.5"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Categories */}
-      <section className="px-6 max-w-7xl mx-auto">
-        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all`}
-              style={{
-                background: activeCategory === cat ? "#232F3E" : "#F5F5F5",
-                color: activeCategory === cat ? "white" : "#666666",
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
-
       {/* Featured Audiobooks */}
       <section className="px-6 py-10 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2
-            className="font-serif text-2xl font-bold"
-            style={{ color: "#232F3E" }}
+            className="font-serif text-2xl font-bold text-[#232F3E]"
           >
             Featured Audiobooks
           </h2>
           <Link
-            href="/home"
+            href="/search?type=audiobook"
             className="text-sm font-semibold transition-colors"
             style={{ color: "#F7941D" }}
           >
@@ -319,21 +136,22 @@ export default function Home() {
           {featuredContent.map((item) => (
             <Link
               key={item.id}
-              href={`/details/${item.id}`}
+              href={`/audiobook/${item.id}`}
               className="book-card group"
             >
               <div className="relative mb-4">
-                <img
+                <Image
                   src={item.cover}
                   alt={item.title}
+                  width={200}
+                  height={300}
                   className="w-full rounded-lg shadow-lg"
-                  style={{ aspectRatio: "2/3", objectFit: "cover" }}
+                  style={{ objectFit: "cover" }}
                 />
                 <div className="book-shadow absolute -bottom-2 left-3 right-3 h-4 rounded-full bg-black/20 blur-md"></div>
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                   <button
-                    className="w-14 h-14 rounded-full flex items-center justify-center"
-                    style={{ background: "#F7941D" }}
+                    className="w-14 h-14 rounded-full flex items-center justify-center bg-[#F7941D]"
                   >
                     <svg
                       className="w-6 h-6 text-white ml-1"
@@ -346,32 +164,15 @@ export default function Home() {
                 </div>
               </div>
               <h3
-                className="font-serif font-bold truncate"
-                style={{ color: "#232F3E" }}
+                className="font-serif font-bold truncate text-[#232F3E]"
               >
                 {item.title}
               </h3>
-              <p className="text-sm truncate" style={{ color: "#666666" }}>
+              <p className="text-sm truncate text-[#666666]">
                 {item.author}
               </p>
               <div className="flex items-center gap-2 mt-2">
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="w-3.5 h-3.5"
-                      style={{
-                        color:
-                          i < Math.floor(item.rating) ? "#F7941D" : "#E8E8E8",
-                      }}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <span className="text-xs" style={{ color: "#666666" }}>
+                <span className="text-xs text-[#666666]">
                   {item.duration}
                 </span>
               </div>
@@ -384,13 +185,12 @@ export default function Home() {
       <section className="px-6 py-10 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2
-            className="font-serif text-2xl font-bold"
-            style={{ color: "#232F3E" }}
+            className="font-serif text-2xl font-bold text-[#232F3E]"
           >
             Popular Podcasts
           </h2>
           <Link
-            href="/home"
+            href="/search?type=podcast"
             className="text-sm font-semibold transition-colors"
             style={{ color: "#F7941D" }}
           >
@@ -398,17 +198,19 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {podcasts.map((item) => (
+          {podcastsData.map((item) => (
             <Link
               key={item.id}
-              href={`/details/${item.id}`}
+              href={`/podcasts/${item.id}`}
               className="book-card group"
             >
               <div className="relative mb-4">
-                <img
+                <Image
                   src={item.cover}
                   alt={item.title}
-                  className="w-full aspect-square rounded-xl shadow-lg object-cover"
+                  width={200}
+                  height={200}
+                  className="w-full rounded-xl shadow-lg object-cover"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
                   <button
@@ -435,7 +237,7 @@ export default function Home() {
                 {item.author}
               </p>
               <p className="text-xs mt-1" style={{ color: "#999999" }}>
-                {item.episodes} episodes
+                {item.category}
               </p>
             </Link>
           ))}
