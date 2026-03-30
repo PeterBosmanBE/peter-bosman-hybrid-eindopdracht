@@ -7,6 +7,16 @@ import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/src/server/orpc/client";
 import { FilterType } from "@/src/types/FilterType";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/src/components/ui/pagination";
+
+const PAGE_SIZE = 6;
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -26,12 +36,14 @@ export default function SearchPage() {
 
   const query = searchParams.get("q") ?? "";
   const typeParam = (searchParams.get("type") as FilterType | null) ?? "all";
+  const pageParam = Number(searchParams.get("page") ?? "1");
+  const requestedPage = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
   const typeFilter: FilterType =
     typeParam === "audiobook" || typeParam === "podcast" || typeParam === "all"
       ? typeParam
       : "all";
 
-  const updateSearchParams = (next: { q?: string; type?: FilterType }) => {
+  const updateSearchParams = (next: { q?: string; type?: FilterType; page?: number; resetPage?: boolean }) => {
     const params = new URLSearchParams(searchParams.toString());
 
     if (typeof next.q === "string") {
@@ -48,6 +60,16 @@ export default function SearchPage() {
         params.delete("type");
       } else {
         params.set("type", next.type);
+      }
+    }
+
+    if (next.resetPage) {
+      params.delete("page");
+    } else if (typeof next.page === "number") {
+      if (next.page <= 1) {
+        params.delete("page");
+      } else {
+        params.set("page", String(next.page));
       }
     }
 
@@ -75,6 +97,13 @@ export default function SearchPage() {
     });
   }, [items, query, typeFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredItems.slice(start, start + PAGE_SIZE);
+  }, [filteredItems, currentPage]);
+
   const totalMatches = filteredItems.length;
 
   return (
@@ -99,7 +128,7 @@ export default function SearchPage() {
             <input
               type="text"
               value={query}
-              onChange={(e) => updateSearchParams({ q: e.target.value, type: typeFilter })}
+              onChange={(e) => updateSearchParams({ q: e.target.value, type: typeFilter, resetPage: true })}
               placeholder="Try: Morgan Housel, Sapiens, Atomic Habits..."
               className="w-full py-3.5 px-5 pr-12 rounded-full text-sm focus:outline-none border"
               style={{ background: "#FFFFFF", borderColor: "rgba(255,255,255,0.3)", color: "#232F3E" }}
@@ -131,7 +160,7 @@ export default function SearchPage() {
                 {(["all", "audiobook", "podcast"] as const).map((filter) => (
                   <button
                     key={filter}
-                    onClick={() => updateSearchParams({ q: query, type: filter })}
+                    onClick={() => updateSearchParams({ q: query, type: filter, resetPage: true })}
                     className="px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors text-left"
                     style={{
                       background: typeFilter === filter ? "#232F3E" : "#F5F5F5",
@@ -185,8 +214,9 @@ export default function SearchPage() {
               )}
 
               {!contentQuery.isLoading && !contentQuery.isError && filteredItems.length > 0 && (
+                <>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {filteredItems.map((item) => {
+                  {paginatedItems.map((item) => {
                     const href = item.type === "audiobook" ? `/audiobook/${item.id}` : `/podcasts/${item.id}`;
 
                     return (
@@ -229,6 +259,51 @@ export default function SearchPage() {
                     );
                   })}
                 </div>
+                {filteredItems.length > PAGE_SIZE && (
+                  <Pagination className="mt-8">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) {
+                              updateSearchParams({ q: query, type: typeFilter, page: currentPage - 1 });
+                            }
+                          }}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={page === currentPage}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              updateSearchParams({ q: query, type: typeFilter, page });
+                            }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) {
+                              updateSearchParams({ q: query, type: typeFilter, page: currentPage + 1 });
+                            }
+                          }}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+                </>
               )}
             </div>
           </div>
