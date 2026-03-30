@@ -143,6 +143,7 @@ export const contentRouter = {
               author: audiobooks.author,
               duration: audiobooks.duration,
               tags: audiobooks.tags,
+              language: audiobooks.language,
               cover: audiobooks.cover,
               releaseDate: audiobooks.releaseDate,
             })
@@ -155,6 +156,7 @@ export const contentRouter = {
               author: audiobooks.author,
               duration: audiobooks.duration,
               tags: audiobooks.tags,
+              language: audiobooks.language,
               cover: audiobooks.cover,
               releaseDate: audiobooks.releaseDate,
             })
@@ -170,6 +172,7 @@ export const contentRouter = {
               author: podcasts.author,
               duration: podcasts.duration,
               tags: podcasts.tags,
+              language: podcasts.language,
               cover: podcasts.cover,
               releaseDate: podcasts.releaseDate,
             })
@@ -182,6 +185,7 @@ export const contentRouter = {
               author: podcasts.author,
               duration: podcasts.duration,
               tags: podcasts.tags,
+              language: podcasts.language,
               cover: podcasts.cover,
               releaseDate: podcasts.releaseDate,
             })

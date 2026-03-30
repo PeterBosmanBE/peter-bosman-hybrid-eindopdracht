@@ -34,9 +34,11 @@ export default function SearchPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [languageSearchQuery, setLanguageSearchQuery] = useState("");
 
   const query = searchParams.get("q") ?? "";
   const selectedTags = searchParams.getAll("tag");
+  const selectedLanguages = searchParams.getAll("language");
   const typeParam = (searchParams.get("type") as FilterType | null) ?? "all";
   const pageParam = Number(searchParams.get("page") ?? "1");
   const requestedPage = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -45,7 +47,7 @@ export default function SearchPage() {
       ? typeParam
       : "all";
 
-  const updateSearchParams = (next: { q?: string; type?: FilterType; tags?: string[]; page?: number; resetPage?: boolean }) => {
+  const updateSearchParams = (next: { q?: string; type?: FilterType; tags?: string[]; languages?: string[]; page?: number; resetPage?: boolean }) => {
     const params = new URLSearchParams(searchParams.toString());
 
     if (typeof next.q === "string") {
@@ -68,6 +70,11 @@ export default function SearchPage() {
     if (next.tags) {
       params.delete("tag");
       next.tags.forEach((tag) => params.append("tag", tag));
+    }
+
+    if (next.languages) {
+      params.delete("language");
+      next.languages.forEach((language) => params.append("language", language));
     }
 
     if (next.resetPage) {
@@ -113,11 +120,37 @@ export default function SearchPage() {
     );
   }, [availableTags, tagSearchQuery]);
 
+  const availableLanguages = useMemo(() => {
+    const uniqueLanguages = new Set<string>();
+    items.forEach((item) => {
+      const language = item.language?.trim();
+      if (language) {
+        uniqueLanguages.add(language);
+      }
+    });
+    return Array.from(uniqueLanguages).sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
+  const filteredAvailableLanguages = useMemo(() => {
+    const normalizedLanguageSearch = languageSearchQuery.trim().toLowerCase();
+    if (!normalizedLanguageSearch) return availableLanguages;
+    return availableLanguages.filter((language) =>
+      language.toLowerCase().includes(normalizedLanguageSearch),
+    );
+  }, [availableLanguages, languageSearchQuery]);
+
   const toggleTag = (tag: string) => {
     const nextTags = selectedTags.includes(tag)
       ? selectedTags.filter((item) => item !== tag)
       : [...selectedTags, tag];
-    updateSearchParams({ q: query, type: typeFilter, tags: nextTags, resetPage: true });
+    updateSearchParams({ q: query, type: typeFilter, tags: nextTags, languages: selectedLanguages, resetPage: true });
+  };
+
+  const toggleLanguage = (language: string) => {
+    const nextLanguages = selectedLanguages.includes(language)
+      ? selectedLanguages.filter((item) => item !== language)
+      : [...selectedLanguages, language];
+    updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, languages: nextLanguages, resetPage: true });
   };
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -130,15 +163,21 @@ export default function SearchPage() {
     const matchesSelectedTags =
       selectedTags.length === 0 ||
       selectedTags.some((tag) => itemTags.includes(tag.toLowerCase()));
+    const itemLanguage = item.language?.trim().toLowerCase() ?? "";
+    const matchesSelectedLanguages =
+      selectedLanguages.length === 0 ||
+      selectedLanguages.some((language) => language.toLowerCase() === itemLanguage);
 
     if (!matchesType) return false;
     if (!matchesSelectedTags) return false;
+    if (!matchesSelectedLanguages) return false;
     if (!normalizedQuery) return true;
 
     return (
       item.title.toLowerCase().includes(normalizedQuery) ||
       item.author.toLowerCase().includes(normalizedQuery) ||
-      (item.tags ?? "").toLowerCase().includes(normalizedQuery)
+      (item.tags ?? "").toLowerCase().includes(normalizedQuery) ||
+      (item.language ?? "").toLowerCase().includes(normalizedQuery)
     );
   });
 
@@ -204,7 +243,7 @@ export default function SearchPage() {
                   <button
                     key={filter}
                     onClick={() =>
-                      updateSearchParams({ q: query, type: filter, tags: selectedTags, resetPage: true })
+                      updateSearchParams({ q: query, type: filter, tags: selectedTags, languages: selectedLanguages, resetPage: true })
                     }
                     className="px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors text-left"
                     style={{
@@ -256,6 +295,50 @@ export default function SearchPage() {
                       }}
                     >
                       {tag}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <h2 className="font-serif text-lg font-bold mt-6 mb-3" style={{ color: "#232F3E" }}>
+                Filter By Language
+              </h2>
+              <input
+                type="text"
+                value={languageSearchQuery}
+                onChange={(e) => setLanguageSearchQuery(e.target.value)}
+                placeholder="Search languages..."
+                className="w-full py-2 px-3 rounded-lg text-sm border"
+                style={{ background: "#FFFFFF", borderColor: "#E8E8E8", color: "#232F3E" }}
+              />
+              {selectedLanguages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {selectedLanguages.map((language) => (
+                    <button
+                      key={language}
+                      onClick={() => toggleLanguage(language)}
+                      className="px-2 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: "#232F3E", color: "#FFFFFF" }}
+                    >
+                      {language} x
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 mt-3 max-h-44 overflow-y-auto">
+                {filteredAvailableLanguages.map((language) => {
+                  const isActive = selectedLanguages.includes(language);
+                  return (
+                    <button
+                      key={language}
+                      onClick={() => toggleLanguage(language)}
+                      className="px-2 py-1 rounded-full text-xs font-semibold"
+                      style={{
+                        background: isActive ? "#232F3E" : "#F5F5F5",
+                        color: isActive ? "#FFFFFF" : "#666666",
+                      }}
+                    >
+                      {language}
                     </button>
                   );
                 })}
@@ -358,7 +441,7 @@ export default function SearchPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             if (currentPage > 1) {
-                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, page: currentPage - 1 });
+                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, languages: selectedLanguages, page: currentPage - 1 });
                             }
                           }}
                         />
@@ -370,7 +453,7 @@ export default function SearchPage() {
                             isActive={page === currentPage}
                             onClick={(e) => {
                               e.preventDefault();
-                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, page });
+                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, languages: selectedLanguages, page });
                             }}
                           >
                             {page}
@@ -384,7 +467,7 @@ export default function SearchPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             if (currentPage < totalPages) {
-                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, page: currentPage + 1 });
+                              updateSearchParams({ q: query, type: typeFilter, tags: selectedTags, languages: selectedLanguages, page: currentPage + 1 });
                             }
                           }}
                         />
