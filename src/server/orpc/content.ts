@@ -10,6 +10,7 @@ import {
   podcasts,
 } from "@/src/server/db/schema";
 import { AUDIOBOOK_TAGS, PODCAST_TAGS } from "@/src/types/Tags";
+import { LANGUAGES } from "@/src/types/Languages";
 import NoPodcastCover from "@/public/no-podcast-cover.webp";
 import NoAudiobookCover from "@/public/no-audiobook-cover.webp";
 
@@ -42,7 +43,7 @@ const createContentInput = z.object({
   cover: z.string().url().optional(),
   audio: z.string().url().optional(),
   duration: z.string().max(50).optional(),
-  language: z.string().max(50).optional(),
+  language: z.enum(LANGUAGES).optional(),
   publisher: z.string().max(120).optional(),
 });
 

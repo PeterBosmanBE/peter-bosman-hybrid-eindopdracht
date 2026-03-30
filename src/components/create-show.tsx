@@ -16,6 +16,8 @@ import { orpc } from "@/src/server/orpc/client";
 import { Dropzone } from "./dropzone";
 import Image from "next/image";
 import { PODCAST_TAGS } from "@/src/types/Tags";
+import { LANGUAGES } from "@/src/types/Languages";
+import type { Language } from "@/src/types/Languages";
 
 export default function CreateShow({
   setCreateOpen,
@@ -31,7 +33,8 @@ export default function CreateShow({
   const [newType, setNewType] = useState<NewContentType>("podcast");
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newCategory, setNewCategory] = useState("");
+  const [newLanguage, setNewLanguage] = useState<Language>("English");
+  const [languageQuery, setLanguageQuery] = useState("");
   const [newTags, setNewTags] = useState<string[]>([]);
   const [tagQuery, setTagQuery] = useState("");
   const [newLogoUrl, setNewLogoUrl] = useState("");
@@ -47,7 +50,8 @@ export default function CreateShow({
         setCreateOpen(false);
         setNewTitle("");
         setNewDescription("");
-        setNewCategory("");
+        setNewLanguage("English");
+        setLanguageQuery("");
         setNewTags([]);
         setTagQuery("");
         setNewLogoUrl("");
@@ -64,7 +68,8 @@ export default function CreateShow({
         setCreateOpen(false);
         setNewTitle("");
         setNewDescription("");
-        setNewCategory("");
+        setNewLanguage("English");
+        setLanguageQuery("");
         setNewTags([]);
         setTagQuery("");
         setNewLogoUrl("");
@@ -92,11 +97,19 @@ export default function CreateShow({
     );
   }
 
-  const filteredPodcastTags = PODCAST_TAGS.filter(
-    (tag) =>
-      !newTags.includes(tag) &&
-      tag.toLowerCase().includes(tagQuery.trim().toLowerCase()),
-  );
+  const normalizedTagQuery = tagQuery.trim().toLowerCase();
+  const filteredPodcastTags = normalizedTagQuery
+    ? PODCAST_TAGS.filter(
+        (tag) => !newTags.includes(tag) && tag.toLowerCase().includes(normalizedTagQuery),
+      ).slice(0, 12)
+    : [];
+
+  const normalizedLanguageQuery = languageQuery.trim().toLowerCase();
+  const filteredLanguages = normalizedLanguageQuery
+    ? LANGUAGES.filter((language) =>
+        language.toLowerCase().includes(normalizedLanguageQuery),
+      ).slice(0, 12)
+    : [];
 
   async function handleCreateContent() {
     if (!session?.user.id || !newTitle.trim()) return;
@@ -106,7 +119,7 @@ export default function CreateShow({
       title: newTitle.trim(),
       author: session.user.name || "Unknown",
       description: newDescription.trim(),
-      category: newCategory.trim(),
+      language: newLanguage,
       tags: newTags,
       cover: newLogoUrl || undefined,
     };
@@ -119,7 +132,7 @@ export default function CreateShow({
     await createAudiobookMutation.mutateAsync(payload);
   }
   return (
-    <DialogContent>
+    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Create New Content</DialogTitle>
         <DialogDescription>
@@ -172,17 +185,42 @@ export default function CreateShow({
                 />
               </div>
 
-              <div className="space-y-1">
-                <p
-                  className="text-xs font-semibold uppercase text-[#666666]"
-                >
-                  Category
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-[#666666]">
+                  Language
                 </p>
                 <Input
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder="General"
+                  value={languageQuery}
+                  onChange={(e) => setLanguageQuery(e.target.value)}
+                  placeholder="Search languages..."
                 />
+                {filteredLanguages.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto rounded-md border border-[#E8E8E8] bg-white p-2 flex flex-wrap gap-2">
+                    {filteredLanguages.map((language) => (
+                      <Button
+                        key={language}
+                        type="button"
+                        variant="outline"
+                        className="h-8 px-3"
+                        onClick={() => {
+                          setNewLanguage(language);
+                          setLanguageQuery("");
+                        }}
+                        style={{
+                          background: newLanguage === language ? "#232F3E" : "#FFFFFF",
+                          color: newLanguage === language ? "#FFFFFF" : "#232F3E",
+                          borderColor: newLanguage === language ? "#232F3E" : "#E8E8E8",
+                        }}
+                      >
+                        {language}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                {!normalizedLanguageQuery && (
+                  <p className="text-xs text-[#666666]">Type to search languages</p>
+                )}
+                <Button>{newLanguage}</Button>
               </div>
 
               <div className="space-y-2">
@@ -212,6 +250,9 @@ export default function CreateShow({
                     ))}
                   </div>
                 )}
+                {!normalizedTagQuery && (
+                  <p className="text-xs text-[#666666]">Type to search approved tags</p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {newTags.map((tag) => (
                     <Button
@@ -226,8 +267,21 @@ export default function CreateShow({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase text-[#666666]">
+              <div className="space-y-1">
+                <p
+                  className="text-xs font-semibold uppercase text-[#666666]"
+                >
+                  Description
+                </p>
+                <Textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Short description"
+                  rows={3}
+                />
+              </div>
+
+                <p className="font-semibold uppercase text-[#666666]">
                   Podcast logo
                 </p>
                 <div className="border-2 border-dashed border-[#E8E8E8] rounded-lg p-4 text-center">
@@ -265,21 +319,6 @@ export default function CreateShow({
                     </Button>
                   </div>
                 )}
-              </div>
-
-              <div className="space-y-1">
-                <p
-                  className="text-xs font-semibold uppercase text-[#666666]"
-                >
-                  Description
-                </p>
-                <Textarea
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Short description"
-                  rows={3}
-                />
-              </div>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">

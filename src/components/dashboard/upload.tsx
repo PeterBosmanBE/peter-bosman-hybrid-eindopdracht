@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { Progress } from "@/src/components/ui/progress";
 import { upload } from "@vercel/blob/client";
 import { AUDIOBOOK_TAGS } from "@/src/types/Tags";
+import { LANGUAGES } from "@/src/types/Languages";
+import type { Language } from "@/src/types/Languages";
 
 type AudioType = "podcast" | "audiobook" | null;
 
@@ -23,6 +25,7 @@ interface UploadData {
   file: File | null;
   title: string;
   description: string;
+  language: Language;
   tags: string[];
   thumbnail: File | null;
   thumbnailPreview: string | null;
@@ -51,11 +54,13 @@ export default function Upload() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [languageQuery, setLanguageQuery] = useState("");
   const [audiobookTagQuery, setAudiobookTagQuery] = useState("");
   const [data, setData] = useState<UploadData>({
     file: null,
     title: "",
     description: "",
+    language: "English",
     tags: [],
     thumbnail: null,
     thumbnailPreview: null,
@@ -76,6 +81,10 @@ export default function Upload() {
     (tag) =>
       !data.tags.includes(tag) &&
       tag.toLowerCase().includes(audiobookTagQuery.trim().toLowerCase()),
+  );
+
+  const filteredLanguages = LANGUAGES.filter((language) =>
+    language.toLowerCase().includes(languageQuery.trim().toLowerCase()),
   );
 
   const handleFileUpload = useCallback(
@@ -194,6 +203,7 @@ export default function Upload() {
           title: data.title,
           author: session?.user?.name ?? "Unknown Author",
           description: data.description,
+          language: data.language,
           tags: data.tags,
           audio: audioUrl,
           cover: coverUrl,
@@ -393,6 +403,44 @@ export default function Upload() {
               className="border-2 border-border focus:border-primary resize-none"
             />
           </div>
+
+          {data.audioType === "audiobook" && (
+            <div className="space-y-2">
+              <label className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                Language
+              </label>
+              <Input
+                value={languageQuery}
+                onChange={(e) => setLanguageQuery(e.target.value)}
+                placeholder="Search languages..."
+                className="border-2 border-border focus:border-primary"
+              />
+              {filteredLanguages.length > 0 && (
+                <div className="max-h-32 overflow-y-auto rounded-md border border-border bg-background p-2 flex flex-wrap gap-2">
+                  {filteredLanguages.map((language) => (
+                    <Button
+                      key={language}
+                      type="button"
+                      variant="outline"
+                      className="h-8 px-3"
+                      onClick={() => {
+                        setData((prev) => ({ ...prev, language }));
+                        setLanguageQuery("");
+                      }}
+                      style={{
+                        background: data.language === language ? "#232F3E" : "#FFFFFF",
+                        color: data.language === language ? "#FFFFFF" : "#232F3E",
+                        borderColor: data.language === language ? "#232F3E" : "#E8E8E8",
+                      }}
+                    >
+                      {language}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Selected: {data.language}</p>
+            </div>
+          )}
 
           {data.audioType === "audiobook" && (
             <div className="space-y-2">
