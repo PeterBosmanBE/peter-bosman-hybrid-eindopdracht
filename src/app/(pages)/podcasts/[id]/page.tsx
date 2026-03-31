@@ -70,7 +70,7 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');
+  const [activeTab, setActiveTab] = useState<'chapters'>('chapters');
   const [resolvedDurations, setResolvedDurations] = useState<Record<string, string>>({});
 
   const detailQuery = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
@@ -360,16 +360,6 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                     <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
                   )}
                 </button>
-                <button
-                  onClick={() => setActiveTab('reviews')}
-                  className="pb-4 px-1 text-sm font-semibold transition-colors relative"
-                  style={{ color: activeTab === 'reviews' ? '#232F3E' : '#666666' }}
-                >
-                  Reviews
-                  {activeTab === 'reviews' && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
-                  )}
-                </button>
               </div>
 
               {activeTab === 'chapters' && (
@@ -407,16 +397,6 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                       </Link>
                     ))
                   )}
-                </div>
-              )}
-
-              {activeTab === 'reviews' && (
-                <div className="space-y-4">
-                  <div className="p-5 rounded-lg" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
-                    <p className="text-sm leading-relaxed" style={{ color: '#444444' }}>
-                      Reviews are not connected to the database yet.
-                    </p>
-                  </div>
                 </div>
               )}
             </div>

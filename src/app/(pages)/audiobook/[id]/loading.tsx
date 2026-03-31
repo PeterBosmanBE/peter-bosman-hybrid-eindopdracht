@@ -4,7 +4,7 @@ import { Skeleton } from "@/src/components/ui/skeleton"
 import { useState } from "react";
 
 export default function LoadingDetails() {
-  const [activeTab, setActiveTab] = useState<'chapters' | 'reviews'>('chapters');    
+  const [activeTab, setActiveTab] = useState<'chapters'>('chapters');    
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF8', fontFamily: "'Source Sans 3', sans-serif" }}>
       <section className="border-b" style={{ background: '#232F3E', borderColor: '#37475A' }}>
@@ -103,16 +103,6 @@ export default function LoadingDetails() {
                 >
                   Chapters
                   {activeTab === 'chapters' && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab('reviews')}
-                  className="pb-4 px-1 text-sm font-semibold transition-colors relative"
-                  style={{ color: '#666666' }}
-                >
-                  Reviews
-                  {activeTab === 'reviews' && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#F7941D' }} />
                   )}
                 </button>
