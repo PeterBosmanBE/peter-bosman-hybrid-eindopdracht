@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Textarea } from "@/src/components/ui/textarea";
@@ -10,7 +10,7 @@ import { Icons } from "@/src/components/icons";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { orpc } from "@/src/server/orpc/client";
 import { authClient } from "@/src/server/auth/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Progress } from "@/src/components/ui/progress";
 import { upload } from "@vercel/blob/client";
@@ -75,6 +75,7 @@ const steps = [
 ];
 
 export default function Upload() {
+  const searchParams = useSearchParams();
   const { data: session } = authClient.useSession();
   const podcastsQuery = useQuery({
     ...orpc.content.list.queryOptions({
@@ -110,6 +111,30 @@ export default function Upload() {
     audiobookId: "",
     narrator: "",
   });
+
+  useEffect(() => {
+    const podcastId = searchParams.get("podcastId");
+    const audiobookId = searchParams.get("audiobookId");
+
+    if (podcastId) {
+      setData((prev) => ({
+        ...prev,
+        audioType: "podcast",
+        podcastId,
+        audiobookId: "",
+      }));
+      return;
+    }
+
+    if (audiobookId) {
+      setData((prev) => ({
+        ...prev,
+        audioType: "audiobook",
+        audiobookId,
+        podcastId: "",
+      }));
+    }
+  }, [searchParams]);
 
   const audiobookDetailQuery = useQuery({
     ...orpc.content.detail.queryOptions({

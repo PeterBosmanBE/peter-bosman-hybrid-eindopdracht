@@ -218,14 +218,14 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-bold">Chapters ({localChapters.length})</h2>
-          <Link href={`/dashboard/upload?audiobook=${id}`} className="text-blue-600 hover:underline text-sm">
+          <Link href={`/dashboard?tab=upload&audiobookId=${id}`} className="text-blue-600 hover:underline text-sm">
             + Add Chapter
           </Link>
         </div>
 
         {localChapters.length === 0 ? (
           <div className="px-6 py-12 text-center text-gray-500">
-            No chapters yet. <Link href={`/dashboard/upload?audiobook=${id}`} className="text-blue-600 hover:underline">Add one now</Link>
+            No chapters yet. <Link href={`/dashboard?tab=upload&audiobookId=${id}`} className="text-blue-600 hover:underline">Add one now</Link>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">

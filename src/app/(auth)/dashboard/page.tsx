@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { myContent } from '@/src/lib/test-data';
-import Sidebar from '@/src/components/layout/sidebar';
+import { useSearchParams } from 'next/navigation';
 import Content from '@/src/components/dashboard/content';
 import { DashboardTabType } from '@/src/types/DashboardTabType';
 import Upload from '@/src/components/dashboard/upload';
@@ -36,8 +34,12 @@ const weeklyData = [
 ];
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<DashboardTabType>('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
+  const activeTab: DashboardTabType =
+    tab === 'overview' || tab === 'content' || tab === 'upload' || tab === 'profile'
+      ? tab
+      : 'overview';
 
   const maxListeners = Math.max(...weeklyData.map(d => d.listeners));
 
@@ -57,39 +59,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FAFAF8' }}>
-
-      {/* Mobile Backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <Sidebar 
-        activeTab={activeTab} 
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-          setSidebarOpen(false);
-        }} 
-        isOpen={sidebarOpen} 
-      />
-
-      {/* Mobile Menu Toggle */}
-      <Button 
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
-        style={{ background: '#F7941D' }}
-      >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-        </svg>
-      </Button>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+    <div>
         {/* Header */}
         <header className="sticky top-0 z-30 px-6 py-4 border-b bg-white border-nav-border">
           <div className="flex items-center justify-between">
@@ -192,7 +162,7 @@ export default function Dashboard() {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div>
-              <Content onTabChange={setActiveTab} />
+              <Content />
             </div>
           )}
 
@@ -209,7 +179,6 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </main>
     </div>
   );
 }

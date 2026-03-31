@@ -1,4 +1,5 @@
 import { auth } from "@/src/server/auth/auth";
+import DashboardShell from "@/src/components/layout/dashboard-shell";
 import { Source_Sans_3 } from "next/font/google";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -26,7 +27,7 @@ export default async function RootLayout({
   }
   return (
     <main className={`${sourceSans.className} font-sans antialiased`}>
-      {children}
+      <DashboardShell>{children}</DashboardShell>
     </main>
   );
 }
