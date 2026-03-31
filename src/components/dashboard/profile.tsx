@@ -25,8 +25,8 @@ const profileSchema = z.object({
   bio: z
     .string()
     .regex(
-      /^[\p{L}\p{N} ]+$/u,
-      "Display name can only contain letters, numbers, and spaces. Emojis and special characters are not allowed.",
+      /^[\p{L}\p{N}\s.,:;!?()\[\]{}\-\/\\'"_]+$/u,
+      "Bio can only contain letters, numbers, spaces, and common punctuation. Emojis and unusual special characters are not allowed.",
     )
     .optional(),
 });
