@@ -41,6 +41,7 @@ type DashboardItem = {
   releaseDate: string | null;
 };
 
+
 export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -50,12 +51,25 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
 
   const { data: session, isPending: isSessionPending } = authClient.useSession();
 
+  // Always fetch totals with type: 'all'
+  const totalsQuery = useQuery({
+    ...orpc.content.list.queryOptions({
+      input: {
+        userId: session?.user?.id,
+        type: "all",
+      },
+    }),
+    enabled: !isSessionPending && Boolean(session?.user?.id),
+    select: (data) => data?.totals ?? { all: 0, audiobooks: 0, podcasts: 0 },
+  });
+
+  // Fetch filtered items as before
   const contentQuery = useQuery({
     ...orpc.content.list.queryOptions({
       input: {
         userId: session?.user?.id,
         type: activeFilter,
-      }
+      },
     }),
     enabled: !isSessionPending && Boolean(session?.user?.id),
   });
@@ -76,7 +90,7 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
     ...item,
     duration: item.duration ?? "00:00",
   }));
-  const totals = contentQuery.data?.totals ?? { all: 0, audiobooks: 0, podcasts: 0 };
+  const totals = totalsQuery.data ?? { all: 0, audiobooks: 0, podcasts: 0 };
 
   function openEditDialog(item: DashboardItem) {
     setEditingItem(item);
