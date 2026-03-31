@@ -166,7 +166,6 @@ export default function Upload() {
     [selectFile],
   );
 
-  const canProceedToStep2 = data.file !== null;
   const canSubmit =
     data.audioType &&
     (data.audioType === "audiobook" || data.title.trim()) &&

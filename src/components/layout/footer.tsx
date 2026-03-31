@@ -10,9 +10,7 @@ export default function Footer() {
           <div className="grid md:grid-cols-4 gap-10 mb-12">
             <div>
               <div className="flex items-center gap-3 mb-5">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center bg-logo-color"
-                >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-logo-color">
                   <svg
                     className="w-5 h-5 text-white"
                     fill="currentColor"
@@ -66,15 +64,18 @@ export default function Footer() {
                 </li>
               </ul>
             </div>
-            <div>
-            </div>
+            <div></div>
           </div>
           <div
             className="pt-8 border-t"
             style={{ borderColor: "rgba(255,255,255,0.1)" }}
           >
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              © {currentYear} Chapter. All rights reserved.
+              © {currentYear}{" "}
+              <Link href="http://peterbosman.be" className="hover:text-white">
+                Peter Bosman
+              </Link>
+              . All rights reserved.
             </p>
           </div>
         </div>

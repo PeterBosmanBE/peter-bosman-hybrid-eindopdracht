@@ -6,7 +6,7 @@ import Sidebar from '@/src/components/layout/sidebar';
 import { Button } from '@/src/components/ui/button';
 import type { DashboardTabType } from '@/src/types/DashboardTabType';
 
-const TABS: DashboardTabType[] = ['overview', 'content', 'upload', 'profile'];
+const TABS: DashboardTabType[] = ['content', 'upload', 'profile'];
 
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       return tabFromQuery as DashboardTabType;
     }
 
-    return 'overview';
+    return 'content';
   }, [pathname, searchParams]);
 
   const handleTabChange = (tab: DashboardTabType) => {
@@ -31,7 +31,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FAFAF8' }}>
+    <div className="min-h-screen flex bg-[#FAFAF8]">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"

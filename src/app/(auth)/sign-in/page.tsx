@@ -66,24 +66,7 @@ export default function SocialLogin() {
             <SignInSocials name={"GitHub"} provider="github" icon="github" turnstileToken={turnstileToken} />
             <SignInSocials name={"Discord"} provider="discord" icon="discord" turnstileToken={turnstileToken} />
           </div>
-          
         </div>
-
-        {/* Footer text */}
-        <p
-          className="text-center mt-6 text-sm"
-          style={{ color: "rgba(255,255,255,0.5)" }}
-        >
-          By signing in, you agree to our{" "}
-          <span style={{ color: "#F7941D" }} className="cursor-pointer hover:underline">
-            Terms of Service
-          </span>{" "}
-          and{" "}
-          <span style={{ color: "#F7941D" }} className="cursor-pointer hover:underline">
-            Privacy Policy
-          </span>
-          .
-        </p>
       </div>
     </div>
   );
