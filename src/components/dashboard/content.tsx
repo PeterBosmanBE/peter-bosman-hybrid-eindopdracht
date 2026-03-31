@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/src/server/auth/auth-client";
@@ -202,7 +203,9 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
                                       />
                                   </div>
                                     <div>
-                                      <p className="font-semibold">{item.title}</p>
+                                      <Link href={`/dashboard/${item.type}/${item.id}`} className="font-semibold hover:text-blue-600 transition-colors">
+                                        {item.title}
+                                      </Link>
                                       <div className="flex items-center gap-1 md:hidden">
                                         <span className="text-xs px-2 py-0.5 rounded-full capitalize" style={{ background: '#F5F5F5', color: '#666666' }}>
                                           {item.type}

@@ -1,6 +1,7 @@
 import { os } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { and, asc, eq, ne } from "drizzle-orm";
+import type { InferInsertModel } from "drizzle-orm";
 import * as z from "zod";
 import { db } from "@/src/server/db/client";
 import {
@@ -123,6 +124,14 @@ const deleteContentInput = z.object({
   id: z.string().min(1),
   type: z.enum(["audiobook", "podcast"]),
 });
+
+type ChapterUpdatePayload = Partial<
+  Pick<InferInsertModel<typeof audiobookChapters>, "title" | "description" | "narrator">
+>;
+
+type EpisodeUpdatePayload = Partial<
+  Pick<InferInsertModel<typeof podcastEpisodes>, "title" | "description">
+>;
 
 export const contentRouter = {
   createPodcast: os.input(createContentInput).handler(async ({ input }) => {
@@ -431,6 +440,7 @@ export const contentRouter = {
           duration: podcastEpisodes.duration,
           audio: podcastEpisodes.audio,
           date: podcastEpisodes.date,
+          description: podcastEpisodes.description,
         })
         .from(podcastEpisodes)
         .where(eq(podcastEpisodes.podcastId, input.id))
@@ -540,5 +550,104 @@ export const contentRouter = {
     await db.delete(podcasts).where(eq(podcasts.id, input.id));
 
     return { id: input.id };
+  }),
+
+  updateChapter: os.input(z.object({
+    chapterId: z.string().min(1),
+    title: z.string().max(200).optional(),
+    description: z.string().max(5000).optional(),
+    narrator: z.string().max(120).optional(),
+  })).handler(async ({ input }) => {
+    const payload: ChapterUpdatePayload = {};
+    if (input.title !== undefined) payload.title = input.title.trim();
+    if (input.description !== undefined) payload.description = input.description.trim();
+    if (input.narrator !== undefined) payload.narrator = input.narrator.trim() || null;
+
+    const result = await db
+      .update(audiobookChapters)
+      .set(payload)
+      .where(eq(audiobookChapters.id, input.chapterId))
+      .returning({ id: audiobookChapters.id });
+
+    if (!result[0]) {
+      throw new ORPCError("NOT_FOUND");
+    }
+
+    return { id: result[0].id };
+  }),
+
+  deleteChapter: os.input(z.object({
+    chapterId: z.string().min(1),
+  })).handler(async ({ input }) => {
+    const chapter = await db
+      .select({ audiobookId: audiobookChapters.audiobookId })
+      .from(audiobookChapters)
+      .where(eq(audiobookChapters.id, input.chapterId))
+      .limit(1);
+
+    if (!chapter[0]) {
+      throw new ORPCError("NOT_FOUND");
+    }
+
+    await db.delete(bookmarks).where(eq(bookmarks.contentId, input.chapterId));
+    await db.delete(audiobookChapters).where(eq(audiobookChapters.id, input.chapterId));
+
+    const remainingChapters = await db
+      .select({ duration: audiobookChapters.duration })
+      .from(audiobookChapters)
+      .where(eq(audiobookChapters.audiobookId, chapter[0].audiobookId));
+
+    const totalDurationSeconds = remainingChapters.reduce(
+      (sum, ch) => sum + parseDurationToSeconds(ch.duration),
+      0,
+    );
+
+    await db
+      .update(audiobooks)
+      .set({ duration: formatSecondsToDuration(totalDurationSeconds) })
+      .where(eq(audiobooks.id, chapter[0].audiobookId));
+
+    return { id: input.chapterId };
+  }),
+
+  updateEpisode: os.input(z.object({
+    episodeId: z.string().min(1),
+    title: z.string().max(200).optional(),
+    description: z.string().max(5000).optional(),
+  })).handler(async ({ input }) => {
+    const payload: EpisodeUpdatePayload = {};
+    if (input.title !== undefined) payload.title = input.title.trim();
+    if (input.description !== undefined) payload.description = input.description.trim();
+
+    const result = await db
+      .update(podcastEpisodes)
+      .set(payload)
+      .where(eq(podcastEpisodes.id, input.episodeId))
+      .returning({ id: podcastEpisodes.id });
+
+    if (!result[0]) {
+      throw new ORPCError("NOT_FOUND");
+    }
+
+    return { id: result[0].id };
+  }),
+
+  deleteEpisode: os.input(z.object({
+    episodeId: z.string().min(1),
+  })).handler(async ({ input }) => {
+    const episode = await db
+      .select({ podcastId: podcastEpisodes.podcastId })
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.id, input.episodeId))
+      .limit(1);
+
+    if (!episode[0]) {
+      throw new ORPCError("NOT_FOUND");
+    }
+
+    await db.delete(bookmarks).where(eq(bookmarks.contentId, input.episodeId));
+    await db.delete(podcastEpisodes).where(eq(podcastEpisodes.id, input.episodeId));
+
+    return { id: input.episodeId };
   }),
 };
