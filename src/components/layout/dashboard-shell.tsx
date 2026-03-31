@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useMemo, useState, type ReactNode } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import Sidebar from '@/src/components/layout/sidebar';
-import { Button } from '@/src/components/ui/button';
-import type { DashboardTabType } from '@/src/types/DashboardTabType';
+import { useMemo, useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Sidebar from "@/src/components/layout/sidebar";
+import { Button } from "@/src/components/ui/button";
+import type { DashboardTabType } from "@/src/types/DashboardTabType";
 
-const TABS: DashboardTabType[] = ['content', 'upload', 'profile'];
+const TABS: DashboardTabType[] = ["content", "upload", "profile"];
 
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -15,14 +15,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const activeTab = useMemo<DashboardTabType>(() => {
-    if (pathname !== '/dashboard') return 'content';
+    if (pathname !== "/dashboard") return "content";
 
-    const tabFromQuery = searchParams.get('tab');
+    const tabFromQuery = searchParams.get("tab");
     if (tabFromQuery && TABS.includes(tabFromQuery as DashboardTabType)) {
       return tabFromQuery as DashboardTabType;
     }
 
-    return 'content';
+    return "content";
   }, [pathname, searchParams]);
 
   const handleTabChange = (tab: DashboardTabType) => {
@@ -39,15 +39,29 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         />
       )}
 
-      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} isOpen={sidebarOpen} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        isOpen={sidebarOpen}
+      />
 
       <Button
         onClick={() => setSidebarOpen((open) => !open)}
         className="lg:hidden fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
-        style={{ background: '#F7941D' }}
+        style={{ background: "#F7941D" }}
       >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'} />
+        <svg
+          className="w-6 h-6 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+          />
         </svg>
       </Button>
 

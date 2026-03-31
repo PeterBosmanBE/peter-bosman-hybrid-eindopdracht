@@ -24,7 +24,9 @@ export default function Header() {
       params.set("q", trimmed);
     }
 
-    const target = params.toString() ? `/search?${params.toString()}` : "/search";
+    const target = params.toString()
+      ? `/search?${params.toString()}`
+      : "/search";
     router.push(target);
     setIsMenuOpen(false);
   };
@@ -32,9 +34,7 @@ export default function Header() {
   return (
     <>
       {/* Navigation */}
-      <nav
-        className="sticky top-0 z-50 border-b bg-white border-nav-border"
-      >
+      <nav className="sticky top-0 z-50 border-b bg-white border-nav-border">
         <div className="max-w-7xl mx-auto">
           {/* Top Bar */}
           <div className="flex items-center justify-between px-6 py-4">
@@ -154,9 +154,7 @@ export default function Header() {
                 </Button>
               )}
               {session ? (
-                <div onClick={() => authClient.signOut()}>
-                  Sign Out
-                </div>
+                <div onClick={() => authClient.signOut()}>Sign Out</div>
               ) : (
                 ""
               )}

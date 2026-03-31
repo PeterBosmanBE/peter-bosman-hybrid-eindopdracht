@@ -31,11 +31,11 @@ function parseDurationToSeconds(duration: string | null | undefined) {
       .filter((part) => Number.isFinite(part));
 
     if (parts.length === 3) {
-      return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
     }
 
     if (parts.length === 2) {
-      return (parts[0] * 60) + parts[1];
+      return parts[0] * 60 + parts[1];
     }
   }
 
@@ -47,7 +47,7 @@ function parseDurationToSeconds(duration: string | null | undefined) {
     const hours = Number.parseInt(hoursMatch?.[1] ?? "0", 10);
     const minutes = Number.parseInt(minutesMatch?.[1] ?? "0", 10);
     const seconds = Number.parseInt(secondsMatch?.[1] ?? "0", 10);
-    return (hours * 3600) + (minutes * 60) + seconds;
+    return hours * 3600 + minutes * 60 + seconds;
   }
 
   const numeric = Number.parseInt(value, 10);
@@ -89,7 +89,11 @@ const createContentInput = z.object({
     .array(z.string())
     .optional()
     .refine(
-      (values) => !values || values.every((value) => APPROVED_TAGS.includes(value as (typeof APPROVED_TAGS)[number])),
+      (values) =>
+        !values ||
+        values.every((value) =>
+          APPROVED_TAGS.includes(value as (typeof APPROVED_TAGS)[number]),
+        ),
       "One or more tags are not approved",
     ),
   category: z.string().max(120).optional(),
@@ -111,7 +115,11 @@ const updateContentInput = z.object({
     .array(z.string())
     .optional()
     .refine(
-      (values) => !values || values.every((value) => APPROVED_TAGS.includes(value as (typeof APPROVED_TAGS)[number])),
+      (values) =>
+        !values ||
+        values.every((value) =>
+          APPROVED_TAGS.includes(value as (typeof APPROVED_TAGS)[number]),
+        ),
       "One or more tags are not approved",
     ),
   cover: z.string().url().optional(),
@@ -126,7 +134,10 @@ const deleteContentInput = z.object({
 });
 
 type ChapterUpdatePayload = Partial<
-  Pick<InferInsertModel<typeof audiobookChapters>, "title" | "description" | "narrator">
+  Pick<
+    InferInsertModel<typeof audiobookChapters>,
+    "title" | "description" | "narrator"
+  >
 >;
 
 type EpisodeUpdatePayload = Partial<
@@ -191,94 +202,103 @@ export const contentRouter = {
     return { id };
   }),
 
-  createAudiobookChapter: os.input(z.object({
-    audiobookId: z.string().min(1),
-    title: z.string().max(200).optional(),
-    description: z.string().max(5000).optional(),
-    audio: z.string().url().optional(),
-    duration: z.string().max(50).optional(),
-    narrator: z.string().max(120).optional(),
-  })).handler(async ({ input }) => {
-    const id = crypto.randomUUID();
-    const chapterDuration = input.duration?.trim() || "00:00";
+  createAudiobookChapter: os
+    .input(
+      z.object({
+        audiobookId: z.string().min(1),
+        title: z.string().max(200).optional(),
+        description: z.string().max(5000).optional(),
+        audio: z.string().url().optional(),
+        duration: z.string().max(50).optional(),
+        narrator: z.string().max(120).optional(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const id = crypto.randomUUID();
+      const chapterDuration = input.duration?.trim() || "00:00";
 
-    const latestChapter = await db
-      .select({ sortOrder: audiobookChapters.sortOrder })
-      .from(audiobookChapters)
-      .where(eq(audiobookChapters.audiobookId, input.audiobookId))
-      .orderBy(desc(audiobookChapters.sortOrder))
-      .limit(1);
+      const latestChapter = await db
+        .select({ sortOrder: audiobookChapters.sortOrder })
+        .from(audiobookChapters)
+        .where(eq(audiobookChapters.audiobookId, input.audiobookId))
+        .orderBy(desc(audiobookChapters.sortOrder))
+        .limit(1);
 
-    const nextChapterNumber = (latestChapter[0]?.sortOrder ?? 0) + 1;
-    const chapterTitle = input.title?.trim() || `Chapter ${nextChapterNumber}`;
+      const nextChapterNumber = (latestChapter[0]?.sortOrder ?? 0) + 1;
+      const chapterTitle =
+        input.title?.trim() || `Chapter ${nextChapterNumber}`;
 
-    await db.insert(audiobookChapters).values({
-      id,
-      audiobookId: input.audiobookId,
-      sortOrder: nextChapterNumber,
-      title: chapterTitle,
-      duration: chapterDuration,
-      audio: input.audio || "",
-      description: input.description?.trim() || "",
-      narrator: input.narrator?.trim() || null,
-    });
+      await db.insert(audiobookChapters).values({
+        id,
+        audiobookId: input.audiobookId,
+        sortOrder: nextChapterNumber,
+        title: chapterTitle,
+        duration: chapterDuration,
+        audio: input.audio || "",
+        description: input.description?.trim() || "",
+        narrator: input.narrator?.trim() || null,
+      });
 
-    const allChapters = await db
-      .select({ duration: audiobookChapters.duration })
-      .from(audiobookChapters)
-      .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+      const allChapters = await db
+        .select({ duration: audiobookChapters.duration })
+        .from(audiobookChapters)
+        .where(eq(audiobookChapters.audiobookId, input.audiobookId));
 
-    const totalDurationSeconds = allChapters.reduce(
-      (sum, chapter) => sum + parseDurationToSeconds(chapter.duration),
-      0,
-    );
+      const totalDurationSeconds = allChapters.reduce(
+        (sum, chapter) => sum + parseDurationToSeconds(chapter.duration),
+        0,
+      );
 
-    await db
-      .update(audiobooks)
-      .set({ duration: formatSecondsToDuration(totalDurationSeconds) })
-      .where(eq(audiobooks.id, input.audiobookId));
+      await db
+        .update(audiobooks)
+        .set({ duration: formatSecondsToDuration(totalDurationSeconds) })
+        .where(eq(audiobooks.id, input.audiobookId));
 
-    return { id };
-  }),
+      return { id };
+    }),
 
-  createPodcastEpisode: os.input(z.object({
-    podcastId: z.string().min(1),
-    title: z.string().min(1).max(200),
-    description: z.string().max(5000).optional(),
-    audio: z.string().url().optional(),
-    duration: z.string().max(50).optional(),
-  })).handler(async ({ input }) => {
-    const today = new Date().toISOString().slice(0, 10);
-    const id = crypto.randomUUID();
-    const episodeDuration = input.duration?.trim() || "00:00";
+  createPodcastEpisode: os
+    .input(
+      z.object({
+        podcastId: z.string().min(1),
+        title: z.string().min(1).max(200),
+        description: z.string().max(5000).optional(),
+        audio: z.string().url().optional(),
+        duration: z.string().max(50).optional(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const id = crypto.randomUUID();
+      const episodeDuration = input.duration?.trim() || "00:00";
 
-    const latestEpisode = await db
-      .select({ sortOrder: podcastEpisodes.sortOrder })
-      .from(podcastEpisodes)
-      .where(eq(podcastEpisodes.podcastId, input.podcastId))
-      .orderBy(desc(podcastEpisodes.sortOrder))
-      .limit(1);
+      const latestEpisode = await db
+        .select({ sortOrder: podcastEpisodes.sortOrder })
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.podcastId, input.podcastId))
+        .orderBy(desc(podcastEpisodes.sortOrder))
+        .limit(1);
 
-    const nextEpisodeNumber = (latestEpisode[0]?.sortOrder ?? 0) + 1;
+      const nextEpisodeNumber = (latestEpisode[0]?.sortOrder ?? 0) + 1;
 
-    await db.insert(podcastEpisodes).values({
-      id,
-      podcastId: input.podcastId,
-      sortOrder: nextEpisodeNumber,
-      title: input.title,
-      duration: episodeDuration,
-      audio: input.audio || "",
-      description: input.description?.trim() || "",
-      date: today,
-    });
+      await db.insert(podcastEpisodes).values({
+        id,
+        podcastId: input.podcastId,
+        sortOrder: nextEpisodeNumber,
+        title: input.title,
+        duration: episodeDuration,
+        audio: input.audio || "",
+        description: input.description?.trim() || "",
+        date: today,
+      });
 
-    await db
-      .update(podcasts)
-      .set({ duration: episodeDuration })
-      .where(eq(podcasts.id, input.podcastId));
+      await db
+        .update(podcasts)
+        .set({ duration: episodeDuration })
+        .where(eq(podcasts.id, input.podcastId));
 
-    return { id };
-  }),
+      return { id };
+    }),
 
   list: os.input(listContentInput).handler(async ({ input }) => {
     const type = input?.type ?? "all";
@@ -288,64 +308,68 @@ export const contentRouter = {
 
     const audiobookRows = shouldFetchAudiobooks
       ? await (input?.userId
-          ? db.select({
-              id: audiobooks.id,
-              title: audiobooks.title,
-              author: audiobooks.author,
-              description: audiobooks.description,
-              duration: audiobooks.duration,
-              tags: audiobooks.tags,
-              language: audiobooks.language,
-              cover: audiobooks.cover,
-              releaseDate: audiobooks.releaseDate,
-            })
-            .from(audiobooks)
-            .where(eq(audiobooks.userId, input.userId))
-            .orderBy(asc(audiobooks.title))
-          : db.select({
-              id: audiobooks.id,
-              title: audiobooks.title,
-              author: audiobooks.author,
-              description: audiobooks.description,
-              duration: audiobooks.duration,
-              tags: audiobooks.tags,
-              language: audiobooks.language,
-              cover: audiobooks.cover,
-              releaseDate: audiobooks.releaseDate,
-            })
-            .from(audiobooks)
-            .orderBy(asc(audiobooks.title)))
+          ? db
+              .select({
+                id: audiobooks.id,
+                title: audiobooks.title,
+                author: audiobooks.author,
+                description: audiobooks.description,
+                duration: audiobooks.duration,
+                tags: audiobooks.tags,
+                language: audiobooks.language,
+                cover: audiobooks.cover,
+                releaseDate: audiobooks.releaseDate,
+              })
+              .from(audiobooks)
+              .where(eq(audiobooks.userId, input.userId))
+              .orderBy(asc(audiobooks.title))
+          : db
+              .select({
+                id: audiobooks.id,
+                title: audiobooks.title,
+                author: audiobooks.author,
+                description: audiobooks.description,
+                duration: audiobooks.duration,
+                tags: audiobooks.tags,
+                language: audiobooks.language,
+                cover: audiobooks.cover,
+                releaseDate: audiobooks.releaseDate,
+              })
+              .from(audiobooks)
+              .orderBy(asc(audiobooks.title)))
       : [];
 
     const podcastRows = shouldFetchPodcasts
       ? await (input?.userId
-          ? db.select({
-              id: podcasts.id,
-              title: podcasts.title,
-              author: podcasts.author,
-              description: podcasts.description,
-              duration: podcasts.duration,
-              tags: podcasts.tags,
-              language: podcasts.language,
-              cover: podcasts.cover,
-              releaseDate: podcasts.releaseDate,
-            })
-            .from(podcasts)
-            .where(eq(podcasts.userId, input.userId))
-            .orderBy(asc(podcasts.title))
-          : db.select({
-              id: podcasts.id,
-              title: podcasts.title,
-              author: podcasts.author,
-              description: podcasts.description,
-              duration: podcasts.duration,
-              tags: podcasts.tags,
-              language: podcasts.language,
-              cover: podcasts.cover,
-              releaseDate: podcasts.releaseDate,
-            })
-            .from(podcasts)
-            .orderBy(asc(podcasts.title)))
+          ? db
+              .select({
+                id: podcasts.id,
+                title: podcasts.title,
+                author: podcasts.author,
+                description: podcasts.description,
+                duration: podcasts.duration,
+                tags: podcasts.tags,
+                language: podcasts.language,
+                cover: podcasts.cover,
+                releaseDate: podcasts.releaseDate,
+              })
+              .from(podcasts)
+              .where(eq(podcasts.userId, input.userId))
+              .orderBy(asc(podcasts.title))
+          : db
+              .select({
+                id: podcasts.id,
+                title: podcasts.title,
+                author: podcasts.author,
+                description: podcasts.description,
+                duration: podcasts.duration,
+                tags: podcasts.tags,
+                language: podcasts.language,
+                cover: podcasts.cover,
+                releaseDate: podcasts.releaseDate,
+              })
+              .from(podcasts)
+              .orderBy(asc(podcasts.title)))
       : [];
 
     const items = [
@@ -424,7 +448,10 @@ export const contentRouter = {
           chapters,
           episodes: [],
         },
-        related: related.map((item) => ({ ...item, type: "audiobook" as const })),
+        related: related.map((item) => ({
+          ...item,
+          type: "audiobook" as const,
+        })),
       };
     }
 
@@ -504,7 +531,9 @@ export const contentRouter = {
       const result = await db
         .update(audiobooks)
         .set(payload)
-        .where(and(eq(audiobooks.id, input.id), eq(audiobooks.userId, input.userId)))
+        .where(
+          and(eq(audiobooks.id, input.id), eq(audiobooks.userId, input.userId)),
+        )
         .returning({ id: audiobooks.id });
 
       if (!result[0]) {
@@ -532,17 +561,26 @@ export const contentRouter = {
       const owned = await db
         .select({ id: audiobooks.id })
         .from(audiobooks)
-        .where(and(eq(audiobooks.id, input.id), eq(audiobooks.userId, input.userId)))
+        .where(
+          and(eq(audiobooks.id, input.id), eq(audiobooks.userId, input.userId)),
+        )
         .limit(1);
 
       if (!owned[0]) {
         throw new ORPCError("NOT_FOUND");
       }
 
-      await db.delete(audiobookChapters).where(eq(audiobookChapters.audiobookId, input.id));
+      await db
+        .delete(audiobookChapters)
+        .where(eq(audiobookChapters.audiobookId, input.id));
       await db
         .delete(bookmarks)
-        .where(and(eq(bookmarks.contentId, input.id), eq(bookmarks.contentType, "audiobook")));
+        .where(
+          and(
+            eq(bookmarks.contentId, input.id),
+            eq(bookmarks.contentType, "audiobook"),
+          ),
+        );
       await db.delete(audiobooks).where(eq(audiobooks.id, input.id));
 
       return { id: input.id };
@@ -558,187 +596,245 @@ export const contentRouter = {
       throw new ORPCError("NOT_FOUND");
     }
 
-    await db.delete(podcastEpisodes).where(eq(podcastEpisodes.podcastId, input.id));
+    await db
+      .delete(podcastEpisodes)
+      .where(eq(podcastEpisodes.podcastId, input.id));
     await db
       .delete(bookmarks)
-      .where(and(eq(bookmarks.contentId, input.id), eq(bookmarks.contentType, "podcast")));
+      .where(
+        and(
+          eq(bookmarks.contentId, input.id),
+          eq(bookmarks.contentType, "podcast"),
+        ),
+      );
     await db.delete(podcasts).where(eq(podcasts.id, input.id));
 
     return { id: input.id };
   }),
 
-  updateChapter: os.input(z.object({
-    chapterId: z.string().min(1),
-    title: z.string().max(200).optional(),
-    description: z.string().max(5000).optional(),
-    narrator: z.string().max(120).optional(),
-  })).handler(async ({ input }) => {
-    const payload: ChapterUpdatePayload = {};
-    if (input.title !== undefined) payload.title = input.title.trim();
-    if (input.description !== undefined) payload.description = input.description.trim();
-    if (input.narrator !== undefined) payload.narrator = input.narrator.trim() || null;
+  updateChapter: os
+    .input(
+      z.object({
+        chapterId: z.string().min(1),
+        title: z.string().max(200).optional(),
+        description: z.string().max(5000).optional(),
+        narrator: z.string().max(120).optional(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const payload: ChapterUpdatePayload = {};
+      if (input.title !== undefined) payload.title = input.title.trim();
+      if (input.description !== undefined)
+        payload.description = input.description.trim();
+      if (input.narrator !== undefined)
+        payload.narrator = input.narrator.trim() || null;
 
-    const result = await db
-      .update(audiobookChapters)
-      .set(payload)
-      .where(eq(audiobookChapters.id, input.chapterId))
-      .returning({ id: audiobookChapters.id });
-
-    if (!result[0]) {
-      throw new ORPCError("NOT_FOUND");
-    }
-
-    return { id: result[0].id };
-  }),
-
-  deleteChapter: os.input(z.object({
-    chapterId: z.string().min(1),
-  })).handler(async ({ input }) => {
-    const chapter = await db
-      .select({ audiobookId: audiobookChapters.audiobookId })
-      .from(audiobookChapters)
-      .where(eq(audiobookChapters.id, input.chapterId))
-      .limit(1);
-
-    if (!chapter[0]) {
-      throw new ORPCError("NOT_FOUND");
-    }
-
-    await db.delete(bookmarks).where(eq(bookmarks.contentId, input.chapterId));
-    await db.delete(audiobookChapters).where(eq(audiobookChapters.id, input.chapterId));
-
-    const reorderedChapters = await db
-      .select({ id: audiobookChapters.id })
-      .from(audiobookChapters)
-      .where(eq(audiobookChapters.audiobookId, chapter[0].audiobookId))
-      .orderBy(asc(audiobookChapters.sortOrder));
-
-    for (const [index, ch] of reorderedChapters.entries()) {
-      await db
+      const result = await db
         .update(audiobookChapters)
-        .set({ sortOrder: index + 1 })
-        .where(eq(audiobookChapters.id, ch.id));
-    }
+        .set(payload)
+        .where(eq(audiobookChapters.id, input.chapterId))
+        .returning({ id: audiobookChapters.id });
 
-    const remainingChapters = await db
-      .select({ duration: audiobookChapters.duration })
-      .from(audiobookChapters)
-      .where(eq(audiobookChapters.audiobookId, chapter[0].audiobookId));
+      if (!result[0]) {
+        throw new ORPCError("NOT_FOUND");
+      }
 
-    const totalDurationSeconds = remainingChapters.reduce(
-      (sum, ch) => sum + parseDurationToSeconds(ch.duration),
-      0,
-    );
+      return { id: result[0].id };
+    }),
 
-    await db
-      .update(audiobooks)
-      .set({ duration: formatSecondsToDuration(totalDurationSeconds) })
-      .where(eq(audiobooks.id, chapter[0].audiobookId));
+  deleteChapter: os
+    .input(
+      z.object({
+        chapterId: z.string().min(1),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const chapter = await db
+        .select({ audiobookId: audiobookChapters.audiobookId })
+        .from(audiobookChapters)
+        .where(eq(audiobookChapters.id, input.chapterId))
+        .limit(1);
 
-    return { id: input.chapterId };
-  }),
+      if (!chapter[0]) {
+        throw new ORPCError("NOT_FOUND");
+      }
 
-  updateEpisode: os.input(z.object({
-    episodeId: z.string().min(1),
-    title: z.string().max(200).optional(),
-    description: z.string().max(5000).optional(),
-  })).handler(async ({ input }) => {
-    const payload: EpisodeUpdatePayload = {};
-    if (input.title !== undefined) payload.title = input.title.trim();
-    if (input.description !== undefined) payload.description = input.description.trim();
-
-    const result = await db
-      .update(podcastEpisodes)
-      .set(payload)
-      .where(eq(podcastEpisodes.id, input.episodeId))
-      .returning({ id: podcastEpisodes.id });
-
-    if (!result[0]) {
-      throw new ORPCError("NOT_FOUND");
-    }
-
-    return { id: result[0].id };
-  }),
-
-  deleteEpisode: os.input(z.object({
-    episodeId: z.string().min(1),
-  })).handler(async ({ input }) => {
-    const episode = await db
-      .select({ podcastId: podcastEpisodes.podcastId })
-      .from(podcastEpisodes)
-      .where(eq(podcastEpisodes.id, input.episodeId))
-      .limit(1);
-
-    if (!episode[0]) {
-      throw new ORPCError("NOT_FOUND");
-    }
-
-    await db.delete(bookmarks).where(eq(bookmarks.contentId, input.episodeId));
-    await db.delete(podcastEpisodes).where(eq(podcastEpisodes.id, input.episodeId));
-
-    const reorderedEpisodes = await db
-      .select({ id: podcastEpisodes.id })
-      .from(podcastEpisodes)
-      .where(eq(podcastEpisodes.podcastId, episode[0].podcastId))
-      .orderBy(asc(podcastEpisodes.sortOrder));
-
-    for (const [index, ep] of reorderedEpisodes.entries()) {
       await db
+        .delete(bookmarks)
+        .where(eq(bookmarks.contentId, input.chapterId));
+      await db
+        .delete(audiobookChapters)
+        .where(eq(audiobookChapters.id, input.chapterId));
+
+      const reorderedChapters = await db
+        .select({ id: audiobookChapters.id })
+        .from(audiobookChapters)
+        .where(eq(audiobookChapters.audiobookId, chapter[0].audiobookId))
+        .orderBy(asc(audiobookChapters.sortOrder));
+
+      for (const [index, ch] of reorderedChapters.entries()) {
+        await db
+          .update(audiobookChapters)
+          .set({ sortOrder: index + 1 })
+          .where(eq(audiobookChapters.id, ch.id));
+      }
+
+      const remainingChapters = await db
+        .select({ duration: audiobookChapters.duration })
+        .from(audiobookChapters)
+        .where(eq(audiobookChapters.audiobookId, chapter[0].audiobookId));
+
+      const totalDurationSeconds = remainingChapters.reduce(
+        (sum, ch) => sum + parseDurationToSeconds(ch.duration),
+        0,
+      );
+
+      await db
+        .update(audiobooks)
+        .set({ duration: formatSecondsToDuration(totalDurationSeconds) })
+        .where(eq(audiobooks.id, chapter[0].audiobookId));
+
+      return { id: input.chapterId };
+    }),
+
+  updateEpisode: os
+    .input(
+      z.object({
+        episodeId: z.string().min(1),
+        title: z.string().max(200).optional(),
+        description: z.string().max(5000).optional(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const payload: EpisodeUpdatePayload = {};
+      if (input.title !== undefined) payload.title = input.title.trim();
+      if (input.description !== undefined)
+        payload.description = input.description.trim();
+
+      const result = await db
         .update(podcastEpisodes)
-        .set({ sortOrder: index + 1 })
-        .where(eq(podcastEpisodes.id, ep.id));
-    }
+        .set(payload)
+        .where(eq(podcastEpisodes.id, input.episodeId))
+        .returning({ id: podcastEpisodes.id });
 
-    return { id: input.episodeId };
-  }),
+      if (!result[0]) {
+        throw new ORPCError("NOT_FOUND");
+      }
 
-  reorderChapters: os.input(z.object({
-    audiobookId: z.string().min(1),
-    chapterIds: z.array(z.string().min(1)).min(1),
-  })).handler(async ({ input }) => {
-    const existing = await db
-      .select({ id: audiobookChapters.id })
-      .from(audiobookChapters)
-      .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+      return { id: result[0].id };
+    }),
 
-    const existingIds = new Set(existing.map((chapter) => chapter.id));
+  deleteEpisode: os
+    .input(
+      z.object({
+        episodeId: z.string().min(1),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const episode = await db
+        .select({ podcastId: podcastEpisodes.podcastId })
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.id, input.episodeId))
+        .limit(1);
 
-    if (existing.length !== input.chapterIds.length || input.chapterIds.some((id) => !existingIds.has(id))) {
-      throw new ORPCError("BAD_REQUEST");
-    }
+      if (!episode[0]) {
+        throw new ORPCError("NOT_FOUND");
+      }
 
-    for (const [index, chapterId] of input.chapterIds.entries()) {
       await db
-        .update(audiobookChapters)
-        .set({ sortOrder: index + 1 })
-        .where(and(eq(audiobookChapters.id, chapterId), eq(audiobookChapters.audiobookId, input.audiobookId)));
-    }
-
-    return { reordered: input.chapterIds.length };
-  }),
-
-  reorderEpisodes: os.input(z.object({
-    podcastId: z.string().min(1),
-    episodeIds: z.array(z.string().min(1)).min(1),
-  })).handler(async ({ input }) => {
-    const existing = await db
-      .select({ id: podcastEpisodes.id })
-      .from(podcastEpisodes)
-      .where(eq(podcastEpisodes.podcastId, input.podcastId));
-
-    const existingIds = new Set(existing.map((episode) => episode.id));
-
-    if (existing.length !== input.episodeIds.length || input.episodeIds.some((id) => !existingIds.has(id))) {
-      throw new ORPCError("BAD_REQUEST");
-    }
-
-    for (const [index, episodeId] of input.episodeIds.entries()) {
+        .delete(bookmarks)
+        .where(eq(bookmarks.contentId, input.episodeId));
       await db
-        .update(podcastEpisodes)
-        .set({ sortOrder: index + 1 })
-        .where(and(eq(podcastEpisodes.id, episodeId), eq(podcastEpisodes.podcastId, input.podcastId)));
-    }
+        .delete(podcastEpisodes)
+        .where(eq(podcastEpisodes.id, input.episodeId));
 
-    return { reordered: input.episodeIds.length };
-  }),
+      const reorderedEpisodes = await db
+        .select({ id: podcastEpisodes.id })
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.podcastId, episode[0].podcastId))
+        .orderBy(asc(podcastEpisodes.sortOrder));
+
+      for (const [index, ep] of reorderedEpisodes.entries()) {
+        await db
+          .update(podcastEpisodes)
+          .set({ sortOrder: index + 1 })
+          .where(eq(podcastEpisodes.id, ep.id));
+      }
+
+      return { id: input.episodeId };
+    }),
+
+  reorderChapters: os
+    .input(
+      z.object({
+        audiobookId: z.string().min(1),
+        chapterIds: z.array(z.string().min(1)).min(1),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const existing = await db
+        .select({ id: audiobookChapters.id })
+        .from(audiobookChapters)
+        .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+
+      const existingIds = new Set(existing.map((chapter) => chapter.id));
+
+      if (
+        existing.length !== input.chapterIds.length ||
+        input.chapterIds.some((id) => !existingIds.has(id))
+      ) {
+        throw new ORPCError("BAD_REQUEST");
+      }
+
+      for (const [index, chapterId] of input.chapterIds.entries()) {
+        await db
+          .update(audiobookChapters)
+          .set({ sortOrder: index + 1 })
+          .where(
+            and(
+              eq(audiobookChapters.id, chapterId),
+              eq(audiobookChapters.audiobookId, input.audiobookId),
+            ),
+          );
+      }
+
+      return { reordered: input.chapterIds.length };
+    }),
+
+  reorderEpisodes: os
+    .input(
+      z.object({
+        podcastId: z.string().min(1),
+        episodeIds: z.array(z.string().min(1)).min(1),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const existing = await db
+        .select({ id: podcastEpisodes.id })
+        .from(podcastEpisodes)
+        .where(eq(podcastEpisodes.podcastId, input.podcastId));
+
+      const existingIds = new Set(existing.map((episode) => episode.id));
+
+      if (
+        existing.length !== input.episodeIds.length ||
+        input.episodeIds.some((id) => !existingIds.has(id))
+      ) {
+        throw new ORPCError("BAD_REQUEST");
+      }
+
+      for (const [index, episodeId] of input.episodeIds.entries()) {
+        await db
+          .update(podcastEpisodes)
+          .set({ sortOrder: index + 1 })
+          .where(
+            and(
+              eq(podcastEpisodes.id, episodeId),
+              eq(podcastEpisodes.podcastId, input.podcastId),
+            ),
+          );
+      }
+
+      return { reordered: input.episodeIds.length };
+    }),
 };

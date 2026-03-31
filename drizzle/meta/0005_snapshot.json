@@ -110,12 +110,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -183,12 +179,8 @@
           "name": "audiobook_chapters_audiobook_id_audiobooks_id_fk",
           "tableFrom": "audiobook_chapters",
           "tableTo": "audiobooks",
-          "columnsFrom": [
-            "audiobook_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["audiobook_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -319,12 +311,8 @@
           "name": "audiobooks_user_id_user_id_fk",
           "tableFrom": "audiobooks",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -332,12 +320,8 @@
           "name": "audiobooks_author_user_name_fk",
           "tableFrom": "audiobooks",
           "tableTo": "user",
-          "columnsFrom": [
-            "author"
-          ],
-          "columnsTo": [
-            "name"
-          ],
+          "columnsFrom": ["author"],
+          "columnsTo": ["name"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -417,12 +401,8 @@
           "name": "podcast_episodes_podcast_id_podcasts_id_fk",
           "tableFrom": "podcast_episodes",
           "tableTo": "podcasts",
-          "columnsFrom": [
-            "podcast_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["podcast_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -541,12 +521,8 @@
           "name": "podcasts_user_id_user_id_fk",
           "tableFrom": "podcasts",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -633,12 +609,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -648,9 +620,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -746,9 +716,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

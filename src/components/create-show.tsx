@@ -25,8 +25,7 @@ export default function CreateShow({
   setCreateOpen: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: session } =
-    authClient.useSession();
+  const { data: session } = authClient.useSession();
 
   const [newType, setNewType] = useState<NewContentType>("podcast");
   const [newTitle, setNewTitle] = useState("");
@@ -99,9 +98,13 @@ export default function CreateShow({
 
   const normalizedTagQuery = tagQuery.trim().toLowerCase();
   const filteredPodcastTags = normalizedTagQuery
-    ? availableTags.filter(
-        (tag) => !newTags.includes(tag) && tag.toLowerCase().includes(normalizedTagQuery),
-      ).slice(0, 12)
+    ? availableTags
+        .filter(
+          (tag) =>
+            !newTags.includes(tag) &&
+            tag.toLowerCase().includes(normalizedTagQuery),
+        )
+        .slice(0, 12)
     : [];
 
   const normalizedLanguageQuery = languageQuery.trim().toLowerCase();
@@ -139,9 +142,7 @@ export default function CreateShow({
           Create a new podcast or audiobook.
         </DialogDescription>
       </DialogHeader>
-      <div
-        className="p-2 flex flex-col gap-4 bg-[#FAFAF8]"
-      >
+      <div className="p-2 flex flex-col gap-4 bg-[#FAFAF8]">
         <div className="grid gap-2 sm:grid-cols-2">
           <Button
             type="button"
@@ -172,15 +173,15 @@ export default function CreateShow({
         <>
           <div className="space-y-3">
             <div className="space-y-1">
-              <p
-                className="text-xs font-semibold uppercase text-[#666666]"
-              >
+              <p className="text-xs font-semibold uppercase text-[#666666]">
                 Title
               </p>
               <Input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={newType === "podcast" ? "Podcast title" : "Audiobook title"}
+                placeholder={
+                  newType === "podcast" ? "Podcast title" : "Audiobook title"
+                }
               />
             </div>
 
@@ -206,9 +207,11 @@ export default function CreateShow({
                         setLanguageQuery("");
                       }}
                       style={{
-                        background: newLanguage === language ? "#232F3E" : "#FFFFFF",
+                        background:
+                          newLanguage === language ? "#232F3E" : "#FFFFFF",
                         color: newLanguage === language ? "#FFFFFF" : "#232F3E",
-                        borderColor: newLanguage === language ? "#232F3E" : "#E8E8E8",
+                        borderColor:
+                          newLanguage === language ? "#232F3E" : "#E8E8E8",
                       }}
                     >
                       {language}
@@ -217,7 +220,9 @@ export default function CreateShow({
                 </div>
               )}
               {!normalizedLanguageQuery && (
-                <p className="text-xs text-[#666666]">Type to search languages</p>
+                <p className="text-xs text-[#666666]">
+                  Type to search languages
+                </p>
               )}
               <Button>{newLanguage}</Button>
             </div>
@@ -250,7 +255,9 @@ export default function CreateShow({
                 </div>
               )}
               {!normalizedTagQuery && (
-                <p className="text-xs text-[#666666]">Type to search approved tags</p>
+                <p className="text-xs text-[#666666]">
+                  Type to search approved tags
+                </p>
               )}
               <div className="flex flex-wrap gap-2">
                 {newTags.map((tag) => (
@@ -267,9 +274,7 @@ export default function CreateShow({
             </div>
 
             <div className="space-y-1">
-              <p
-                className="text-xs font-semibold uppercase text-[#666666]"
-              >
+              <p className="text-xs font-semibold uppercase text-[#666666]">
                 Description
               </p>
               <Textarea
@@ -309,13 +314,19 @@ export default function CreateShow({
               <div className="rounded-lg border border-[#E8E8E8] p-2 flex items-center gap-3">
                 <Image
                   src={newLogoUrl}
-                  alt={newType === "podcast" ? "Podcast logo preview" : "Audiobook cover preview"}
+                  alt={
+                    newType === "podcast"
+                      ? "Podcast logo preview"
+                      : "Audiobook cover preview"
+                  }
                   width={56}
                   height={56}
                   className="w-14 h-14 rounded-md object-cover"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[#666666] truncate">Image uploaded</p>
+                  <p className="text-xs text-[#666666] truncate">
+                    Image uploaded
+                  </p>
                 </div>
                 <Button
                   type="button"

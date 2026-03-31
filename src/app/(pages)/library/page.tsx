@@ -19,7 +19,8 @@ function formatDate(value: string | null) {
 }
 
 export default function LibraryPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
+  const { data: session, isPending: isSessionPending } =
+    authClient.useSession();
 
   const libraryQuery = useQuery({
     ...orpc.library.listLibrary.queryOptions(),
@@ -28,7 +29,10 @@ export default function LibraryPage() {
 
   if (isSessionPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#FAFAF8" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#FAFAF8" }}
+      >
         <p style={{ color: "#666666" }}>Loading library...</p>
       </div>
     );
@@ -38,12 +42,25 @@ export default function LibraryPage() {
     redirect("/sign-in");
   }
 
-  const items = (libraryQuery.data?.items ?? []).filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const items = (libraryQuery.data?.items ?? []).filter(
+    (item): item is NonNullable<typeof item> => Boolean(item),
+  );
 
   return (
-    <div className="min-h-screen px-6 py-10" style={{ background: "#FAFAF8", fontFamily: "'Source Sans 3', sans-serif" }}>
+    <div
+      className="min-h-screen px-6 py-10"
+      style={{
+        background: "#FAFAF8",
+        fontFamily: "'Source Sans 3', sans-serif",
+      }}
+    >
       <div className="max-w-7xl mx-auto">
-        <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2" style={{ color: "#232F3E" }}>My Library</h1>
+        <h1
+          className="font-serif text-3xl md:text-4xl font-bold mb-2"
+          style={{ color: "#232F3E" }}
+        >
+          My Library
+        </h1>
         <p className="mb-8" style={{ color: "#666666" }}>
           Your saved audiobooks and podcasts.
         </p>
@@ -51,26 +68,52 @@ export default function LibraryPage() {
         {libraryQuery.isLoading && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="rounded-xl border p-4" style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}>
-                <div className="w-full rounded-lg mb-4 animate-pulse" style={{ background: "#F1F1EE", aspectRatio: "2/3" }} />
-                <div className="h-5 w-3/4 rounded mb-2 animate-pulse" style={{ background: "#F1F1EE" }} />
-                <div className="h-4 w-1/2 rounded animate-pulse" style={{ background: "#F1F1EE" }} />
+              <div
+                key={i}
+                className="rounded-xl border p-4"
+                style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}
+              >
+                <div
+                  className="w-full rounded-lg mb-4 animate-pulse"
+                  style={{ background: "#F1F1EE", aspectRatio: "2/3" }}
+                />
+                <div
+                  className="h-5 w-3/4 rounded mb-2 animate-pulse"
+                  style={{ background: "#F1F1EE" }}
+                />
+                <div
+                  className="h-4 w-1/2 rounded animate-pulse"
+                  style={{ background: "#F1F1EE" }}
+                />
               </div>
             ))}
           </div>
         )}
 
         {!libraryQuery.isLoading && items.length === 0 && (
-          <div className="rounded-xl border p-8 text-center" style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}>
-            <h2 className="font-serif text-2xl font-bold mb-2" style={{ color: "#232F3E" }}>Your library is empty</h2>
-            <p style={{ color: "#666666" }}>Open an audiobook or podcast and click Add to Library.</p>
+          <div
+            className="rounded-xl border p-8 text-center"
+            style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}
+          >
+            <h2
+              className="font-serif text-2xl font-bold mb-2"
+              style={{ color: "#232F3E" }}
+            >
+              Your library is empty
+            </h2>
+            <p style={{ color: "#666666" }}>
+              Open an audiobook or podcast and click Add to Library.
+            </p>
           </div>
         )}
 
         {!libraryQuery.isLoading && items.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {items.map((item) => {
-              const href = item.type === "audiobook" ? `/audiobook/${item.id}` : `/podcasts/${item.id}`;
+              const href =
+                item.type === "audiobook"
+                  ? `/audiobook/${item.id}`
+                  : `/podcasts/${item.id}`;
 
               return (
                 <Link
@@ -79,7 +122,10 @@ export default function LibraryPage() {
                   className="group rounded-xl border p-4 transition-all hover:shadow-lg"
                   style={{ background: "#FFFFFF", borderColor: "#E8E8E8" }}
                 >
-                  <div className="relative w-full rounded-lg overflow-hidden mb-4" style={{ aspectRatio: "2/3" }}>
+                  <div
+                    className="relative w-full rounded-lg overflow-hidden mb-4"
+                    style={{ aspectRatio: "2/3" }}
+                  >
                     <Image
                       src={item.cover}
                       alt={item.title}
@@ -95,14 +141,23 @@ export default function LibraryPage() {
                     {item.type}
                   </span>
 
-                  <h3 className="font-serif text-lg font-bold line-clamp-1" style={{ color: "#232F3E" }}>
+                  <h3
+                    className="font-serif text-lg font-bold line-clamp-1"
+                    style={{ color: "#232F3E" }}
+                  >
                     {item.title}
                   </h3>
-                  <p className="text-sm line-clamp-1 mb-2" style={{ color: "#666666" }}>
+                  <p
+                    className="text-sm line-clamp-1 mb-2"
+                    style={{ color: "#666666" }}
+                  >
                     {item.author}
                   </p>
 
-                  <div className="flex items-center justify-between text-xs" style={{ color: "#777777" }}>
+                  <div
+                    className="flex items-center justify-between text-xs"
+                    style={{ color: "#777777" }}
+                  >
                     <span>{item.duration}</span>
                     <span>{formatDate(item.releaseDate)}</span>
                   </div>

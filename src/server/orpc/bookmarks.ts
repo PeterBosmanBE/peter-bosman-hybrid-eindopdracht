@@ -12,7 +12,7 @@ export const bookmarksRouter = {
         contentType: z.enum(["audiobook", "podcast"]),
         positionSeconds: z.number().min(0),
         title: z.string().optional(),
-      })
+      }),
     )
     .handler(async ({ input, context }) => {
       const result = await db
@@ -33,7 +33,7 @@ export const bookmarksRouter = {
       z.object({
         contentId: z.string().min(1),
         contentType: z.enum(["audiobook", "podcast"]),
-      })
+      }),
     )
     .handler(async ({ input, context }) => {
       return db
@@ -43,8 +43,8 @@ export const bookmarksRouter = {
           and(
             eq(bookmarks.userId, context.user.id),
             eq(bookmarks.contentId, input.contentId),
-            eq(bookmarks.contentType, input.contentType)
-          )
+            eq(bookmarks.contentType, input.contentType),
+          ),
         )
         .orderBy(bookmarks.positionSeconds);
     }),

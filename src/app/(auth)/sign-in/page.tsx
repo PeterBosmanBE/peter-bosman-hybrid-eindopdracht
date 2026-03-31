@@ -29,7 +29,14 @@ export default function SocialLogin() {
             className="w-10 h-10 rounded-full flex items-center justify-center"
             style={{ background: "#F7941D" }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+            >
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
@@ -58,13 +65,24 @@ export default function SocialLogin() {
               Welcome back
             </h1>
             <p style={{ color: "#666666", fontSize: "15px" }}>
-              Sign in to continue listening to your favorite audiobooks & podcasts.
+              Sign in to continue listening to your favorite audiobooks &
+              podcasts.
             </p>
           </div>
 
           <div className="flex flex-col gap-3">
-            <SignInSocials name={"GitHub"} provider="github" icon="github" turnstileToken={turnstileToken} />
-            <SignInSocials name={"Discord"} provider="discord" icon="discord" turnstileToken={turnstileToken} />
+            <SignInSocials
+              name={"GitHub"}
+              provider="github"
+              icon="github"
+              turnstileToken={turnstileToken}
+            />
+            <SignInSocials
+              name={"Discord"}
+              provider="discord"
+              icon="discord"
+              turnstileToken={turnstileToken}
+            />
           </div>
         </div>
       </div>

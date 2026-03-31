@@ -1,5 +1,5 @@
 import Link from "next/link";
-import "./home.css"
+import "./home.css";
 import Image from "next/image";
 import { db } from "@/src/server/db/client";
 import { audiobooks, podcasts as podcastsTable } from "@/src/server/db/schema";
@@ -13,10 +13,10 @@ async function getRandomItems<T>(items: T[], count: number): Promise<T[]> {
 export default async function Home() {
   const audioList = await db.select().from(audiobooks).limit(20);
   const podcastList = await db.select().from(podcastsTable).limit(20);
-  
+
   const randomAudiobooks = await getRandomItems(audioList, 4);
   const podcastsData = await getRandomItems(podcastList, 4);
-  
+
   const session = await authClient.getSession();
   return (
     <div
@@ -26,7 +26,6 @@ export default async function Home() {
         fontFamily: "'Source Sans 3', sans-serif",
       }}
     >
-
       {/* Hero */}
       <section
         className="px-6 py-12 md:py-20"
@@ -64,7 +63,7 @@ export default async function Home() {
                   >
                     My Library
                   </Link>
-                  ) : (
+                ) : (
                   <Link
                     href="/sign-in"
                     className="px-8 py-3.5 rounded-full font-semibold transition-all hover:opacity-90 inline-block"
@@ -72,8 +71,7 @@ export default async function Home() {
                   >
                     Create a free account!
                   </Link>
-                  )
-                }
+                )}
                 <Link
                   href="/search"
                   className="px-8 py-3.5 rounded-full font-semibold transition-all border hover:bg-white/10 inline-block"
@@ -119,9 +117,7 @@ export default async function Home() {
       {/* Random Audiobooks */}
       <section className="px-6 py-10 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2
-            className="font-serif text-2xl font-bold text-[#232F3E]"
-          >
+          <h2 className="font-serif text-2xl font-bold text-[#232F3E]">
             Random Audiobooks
           </h2>
           <Link
@@ -150,9 +146,7 @@ export default async function Home() {
                 />
                 <div className="book-shadow absolute -bottom-2 left-3 right-3 h-4 rounded-full bg-black/20 blur-md"></div>
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                  <button
-                    className="w-14 h-14 rounded-full flex items-center justify-center bg-[#F7941D]"
-                  >
+                  <button className="w-14 h-14 rounded-full flex items-center justify-center bg-[#F7941D]">
                     <svg
                       className="w-6 h-6 text-white ml-1"
                       fill="currentColor"
@@ -163,18 +157,12 @@ export default async function Home() {
                   </button>
                 </div>
               </div>
-              <h3
-                className="font-serif font-bold truncate text-[#232F3E]"
-              >
+              <h3 className="font-serif font-bold truncate text-[#232F3E]">
                 {item.title}
               </h3>
-              <p className="text-sm truncate text-[#666666]">
-                {item.author}
-              </p>
+              <p className="text-sm truncate text-[#666666]">{item.author}</p>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs text-[#666666]">
-                  {item.duration}
-                </span>
+                <span className="text-xs text-[#666666]">{item.duration}</span>
               </div>
             </Link>
           ))}
@@ -184,9 +172,7 @@ export default async function Home() {
       {/* Random Podcasts */}
       <section className="px-6 py-10 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2
-            className="font-serif text-2xl font-bold text-[#232F3E]"
-          >
+          <h2 className="font-serif text-2xl font-bold text-[#232F3E]">
             Random Podcasts
           </h2>
           <Link

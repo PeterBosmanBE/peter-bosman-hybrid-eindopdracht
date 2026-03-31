@@ -392,7 +392,9 @@ export default function Upload() {
           {/* Title */}
           <div className="space-y-2">
             <label className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              {data.audioType === "audiobook" ? "Chapter Name (Optional)" : "Title *"}
+              {data.audioType === "audiobook"
+                ? "Chapter Name (Optional)"
+                : "Title *"}
             </label>
             <Input
               placeholder={
@@ -440,7 +442,10 @@ export default function Upload() {
                   className="w-full p-3 border-2 border-border rounded-sm bg-background focus:border-primary outline-none transition-colors"
                   value={data.audiobookId}
                   onChange={(e) =>
-                    setData((prev) => ({ ...prev, audiobookId: e.target.value }))
+                    setData((prev) => ({
+                      ...prev,
+                      audiobookId: e.target.value,
+                    }))
                   }
                 >
                   <option value="" disabled>
@@ -454,7 +459,8 @@ export default function Upload() {
                 </select>
               ) : (
                 <div className="p-3 text-sm text-destructive border-2 border-destructive/20 rounded-sm bg-destructive/5">
-                  You don&apos;t have any audiobooks yet. Please create one first!
+                  You don&apos;t have any audiobooks yet. Please create one
+                  first!
                 </div>
               )}
               {data.audiobookId && (

@@ -7,6 +7,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     { error, error_description: errorDescription },
-    { status: 400 }
+    { status: 400 },
   );
 }

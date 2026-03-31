@@ -1,4 +1,14 @@
-import { LucideProps, Check, Upload, FileAudio, Image, Mic, BookOpen, ChevronRight, X } from "lucide-react";
+import {
+  LucideProps,
+  Check,
+  Upload,
+  FileAudio,
+  Image,
+  Mic,
+  BookOpen,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
 export const Icons = {
   image: (props: LucideProps) => <Image {...props} />,

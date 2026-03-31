@@ -37,19 +37,22 @@ export function Dropzone({
       onError: (error) => {
         toast.error("Upload failed");
         console.error(error);
-      }
+      },
     }),
   );
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (onFileSelected) {
-      onFileSelected(acceptedFiles);
-    } else {
-      acceptedFiles.forEach((file) => {
-        uploadMutation.mutate(file);
-      });
-    }
-  }, [uploadMutation, onFileSelected]);
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (onFileSelected) {
+        onFileSelected(acceptedFiles);
+      } else {
+        acceptedFiles.forEach((file) => {
+          uploadMutation.mutate(file);
+        });
+      }
+    },
+    [uploadMutation, onFileSelected],
+  );
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept,
@@ -101,7 +104,7 @@ export function Dropzone({
           <div>
             <label className="cursor-pointer">
               <span className="inline-block px-6 py-3 bg-primary text-primary-foreground font-semibold uppercase tracking-wide rounded-sm hover:bg-primary/90 transition-colors">
-              {buttonLabel}
+                {buttonLabel}
               </span>
             </label>
           </div>

@@ -98,9 +98,13 @@ export default function EditShow({
 
   const normalizedTagQuery = tagQuery.trim().toLowerCase();
   const filteredTags = normalizedTagQuery
-    ? tagOptions.filter(
-        (tag) => !newTags.includes(tag) && tag.toLowerCase().includes(normalizedTagQuery),
-      ).slice(0, 12)
+    ? tagOptions
+        .filter(
+          (tag) =>
+            !newTags.includes(tag) &&
+            tag.toLowerCase().includes(normalizedTagQuery),
+        )
+        .slice(0, 12)
     : [];
 
   const normalizedLanguageQuery = languageQuery.trim().toLowerCase();
@@ -135,9 +139,7 @@ export default function EditShow({
           Update your podcast or audiobook details.
         </DialogDescription>
       </DialogHeader>
-      <div
-        className="p-2 flex flex-col gap-4 bg-[#FAFAF8]"
-      >
+      <div className="p-2 flex flex-col gap-4 bg-[#FAFAF8]">
         <div className="grid gap-2 sm:grid-cols-2">
           <Button
             type="button"
@@ -166,9 +168,7 @@ export default function EditShow({
         </div>
         <div className="space-y-3">
           <div className="space-y-1">
-            <p
-              className="text-xs font-semibold uppercase text-[#666666]"
-            >
+            <p className="text-xs font-semibold uppercase text-[#666666]">
               Title
             </p>
             <Input
@@ -200,9 +200,11 @@ export default function EditShow({
                       setLanguageQuery("");
                     }}
                     style={{
-                      background: newLanguage === language ? "#232F3E" : "#FFFFFF",
+                      background:
+                        newLanguage === language ? "#232F3E" : "#FFFFFF",
                       color: newLanguage === language ? "#FFFFFF" : "#232F3E",
-                      borderColor: newLanguage === language ? "#232F3E" : "#E8E8E8",
+                      borderColor:
+                        newLanguage === language ? "#232F3E" : "#E8E8E8",
                     }}
                   >
                     {language}
@@ -244,7 +246,9 @@ export default function EditShow({
               </div>
             )}
             {!normalizedTagQuery && (
-              <p className="text-xs text-[#666666]">Type to search approved tags</p>
+              <p className="text-xs text-[#666666]">
+                Type to search approved tags
+              </p>
             )}
             <div className="flex flex-wrap gap-2">
               {newTags.map((tag) => (
@@ -261,9 +265,7 @@ export default function EditShow({
           </div>
 
           <div className="space-y-1">
-            <p
-              className="text-xs font-semibold uppercase text-[#666666]"
-            >
+            <p className="text-xs font-semibold uppercase text-[#666666]">
               Description
             </p>
             <Textarea
@@ -281,8 +283,16 @@ export default function EditShow({
             <Dropzone
               accept={{ "image/*": [] }}
               onFileSelected={handleLogoDrop}
-              idleTitle={item.type === "podcast" ? "Drag & drop your podcast logo" : "Drag & drop your audiobook cover"}
-              activeTitle={item.type === "podcast" ? "Release to upload your podcast logo" : "Release to upload your audiobook cover"}
+              idleTitle={
+                item.type === "podcast"
+                  ? "Drag & drop your podcast logo"
+                  : "Drag & drop your audiobook cover"
+              }
+              activeTitle={
+                item.type === "podcast"
+                  ? "Release to upload your podcast logo"
+                  : "Release to upload your audiobook cover"
+              }
               activeSubtitle="Great, we are uploading your cover image."
               buttonLabel="or click to choose an image"
               footerText="PNG, JPG, WEBP up to 10MB"
@@ -301,7 +311,9 @@ export default function EditShow({
                 className="w-14 h-14 rounded-md object-cover"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#666666] truncate">Cover uploaded</p>
+                <p className="text-xs text-[#666666] truncate">
+                  Cover uploaded
+                </p>
               </div>
               <Button
                 type="button"

@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, use, useEffect, type ReactNode } from 'react';
-import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { orpc } from '@/src/server/orpc/client';
-import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
-import { Textarea } from '@/src/components/ui/textarea';
-import { toast } from 'sonner';
+import { useState, use, useEffect, type ReactNode } from "react";
+import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { orpc } from "@/src/server/orpc/client";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { Textarea } from "@/src/components/ui/textarea";
+import { toast } from "sonner";
 
 type PageParams = { id: string };
 
@@ -40,7 +40,7 @@ function SortableChapterRow({
   children: ReactNode;
 }) {
   const [, drop] = useDrop<DragChapterItem>({
-    accept: 'CHAPTER',
+    accept: "CHAPTER",
     hover(item) {
       if (item.index === index) return;
       moveChapter(item.index, index);
@@ -48,35 +48,52 @@ function SortableChapterRow({
     },
   });
 
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'CHAPTER',
-    item: { id: chapter.id, index },
-    end: () => onDragEnd(),
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: "CHAPTER",
+      item: { id: chapter.id, index },
+      end: () => onDragEnd(),
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
     }),
-  }), [chapter.id, index, onDragEnd]);
+    [chapter.id, index, onDragEnd],
+  );
 
   const setNodeRef = (node: HTMLDivElement | null) => {
     drag(drop(node));
   };
 
   return (
-    <div ref={setNodeRef} className="px-6 py-4 cursor-move" style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <div
+      ref={setNodeRef}
+      className="px-6 py-4 cursor-move"
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+    >
       {children}
     </div>
   );
 }
 
-export default function EditAudiobookChapters({ params }: { params: Promise<PageParams> }) {
+export default function EditAudiobookChapters({
+  params,
+}: {
+  params: Promise<PageParams>;
+}) {
   const { id } = use(params);
-  
+
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
-  const audiobook = data?.content?.type === 'audiobook' ? data.content : null;
-  
+  const { data, isLoading } = useQuery(
+    orpc.content.detail.queryOptions({ input: { id } }),
+  );
+  const audiobook = data?.content?.type === "audiobook" ? data.content : null;
+
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ title: '', description: '', narrator: '' });
+  const [editValues, setEditValues] = useState({
+    title: "",
+    description: "",
+    narrator: "",
+  });
 
   const chapters = (audiobook?.chapters || []) as ChapterRow[];
   const [localChapters, setLocalChapters] = useState<ChapterRow[]>([]);
@@ -88,12 +105,14 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   const updateChapterMutation = useMutation(
     orpc.content.updateChapter.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
         setEditingChapterId(null);
-        toast.success('Chapter updated');
+        toast.success("Chapter updated");
       },
       onError: () => {
-        toast.error('Failed to update chapter');
+        toast.error("Failed to update chapter");
       },
     }),
   );
@@ -101,11 +120,13 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   const deleteChapterMutation = useMutation(
     orpc.content.deleteChapter.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
-        toast.success('Chapter deleted');
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
+        toast.success("Chapter deleted");
       },
       onError: () => {
-        toast.error('Failed to delete chapter');
+        toast.error("Failed to delete chapter");
       },
     }),
   );
@@ -113,12 +134,16 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   const reorderChaptersMutation = useMutation(
     orpc.content.reorderChapters.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
-        toast.success('Chapter order updated');
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
+        toast.success("Chapter order updated");
       },
       onError: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
-        toast.error('Failed to reorder chapters');
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
+        toast.error("Failed to reorder chapters");
       },
     }),
   );
@@ -137,7 +162,9 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
 
     const chapterIds = localChapters.map((chapter) => chapter.id);
     const currentIds = chapters.map((chapter) => chapter.id);
-    const changed = chapterIds.some((chapterId, index) => chapterId !== currentIds[index]);
+    const changed = chapterIds.some(
+      (chapterId, index) => chapterId !== currentIds[index],
+    );
 
     if (!changed) return;
 
@@ -147,7 +174,12 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
     });
   };
 
-  const handleEditClick = (chapterId: string, title: string, description: string, narrator: string) => {
+  const handleEditClick = (
+    chapterId: string,
+    title: string,
+    description: string,
+    narrator: string,
+  ) => {
     setEditingChapterId(chapterId);
     setEditValues({ title, description, narrator });
   };
@@ -162,9 +194,11 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   };
 
   const handleDelete = async (chapterId: string) => {
-    const confirmed = window.confirm('Are you sure you want to delete this chapter? This action cannot be undone.');
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this chapter? This action cannot be undone.",
+    );
     if (!confirmed) return;
-    
+
     await deleteChapterMutation.mutateAsync({
       chapterId,
     });
@@ -197,135 +231,183 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <Link href="/dashboard" className="text-blue-600 hover:underline text-sm mb-4 inline-block">
-          ← Back to Dashboard
-        </Link>
-        <div className="flex items-center gap-4 mb-6">
-          <img
-            src={audiobook.cover}
-            alt={audiobook.title}
-            className="w-24 h-24 rounded-lg object-cover"
-          />
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{audiobook.title}</h1>
-            <p className="text-gray-600">{audiobook.author}</p>
-            {audiobook.narrator && <p className="text-gray-500 text-sm">Narrated by {audiobook.narrator}</p>}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Chapters ({localChapters.length})</h2>
-          <Link href={`/dashboard?tab=upload&audiobookId=${id}`} className="text-blue-600 hover:underline text-sm">
-            + Add Chapter
+        <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="text-blue-600 hover:underline text-sm mb-4 inline-block"
+          >
+            ← Back to Dashboard
           </Link>
+          <div className="flex items-center gap-4 mb-6">
+            <img
+              src={audiobook.cover}
+              alt={audiobook.title}
+              className="w-24 h-24 rounded-lg object-cover"
+            />
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{audiobook.title}</h1>
+              <p className="text-gray-600">{audiobook.author}</p>
+              {audiobook.narrator && (
+                <p className="text-gray-500 text-sm">
+                  Narrated by {audiobook.narrator}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
-        {localChapters.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-500">
-            No chapters yet. <Link href={`/dashboard?tab=upload&audiobookId=${id}`} className="text-blue-600 hover:underline">Add one now</Link>
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-bold">
+              Chapters ({localChapters.length})
+            </h2>
+            <Link
+              href={`/dashboard?tab=upload&audiobookId=${id}`}
+              className="text-blue-600 hover:underline text-sm"
+            >
+              + Add Chapter
+            </Link>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {localChapters.map((chapter, index) => (
-              <SortableChapterRow
-                key={chapter.id}
-                chapter={chapter}
-                index={index}
-                moveChapter={moveChapter}
-                onDragEnd={() => {
-                  void persistChapterOrder();
-                }}
+
+          {localChapters.length === 0 ? (
+            <div className="px-6 py-12 text-center text-gray-500">
+              No chapters yet.{" "}
+              <Link
+                href={`/dashboard?tab=upload&audiobookId=${id}`}
+                className="text-blue-600 hover:underline"
               >
-                {editingChapterId === chapter.id ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Chapter {index + 1}: Title
-                      </label>
-                      <Input
-                        value={editValues.title}
-                        onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
-                        placeholder="Chapter name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                      </label>
-                      <Textarea
-                        value={editValues.description}
-                        onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
-                        placeholder="Chapter description"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Narrator
-                      </label>
-                      <Input
-                        value={editValues.narrator}
-                        onChange={(e) => setEditValues({ ...editValues, narrator: e.target.value })}
-                        placeholder="Narrator name"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleSave(chapter.id)}
-                        disabled={updateChapterMutation.isPending}
-                        style={{ background: '#F7941D', color: 'white' }}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        onClick={() => setEditingChapterId(null)}
-                        variant="outline"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-start justify-between mb-3">
+                Add one now
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {localChapters.map((chapter, index) => (
+                <SortableChapterRow
+                  key={chapter.id}
+                  chapter={chapter}
+                  index={index}
+                  moveChapter={moveChapter}
+                  onDragEnd={() => {
+                    void persistChapterOrder();
+                  }}
+                >
+                  {editingChapterId === chapter.id ? (
+                    <div className="space-y-4">
                       <div>
-                        <h3 className="font-semibold text-lg">Chapter {index + 1}: {chapter.title}</h3>
-                        <p className="text-sm text-gray-500">Duration: {chapter.duration}</p>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Chapter {index + 1}: Title
+                        </label>
+                        <Input
+                          value={editValues.title}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              title: e.target.value,
+                            })
+                          }
+                          placeholder="Chapter name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <Textarea
+                          value={editValues.description}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="Chapter description"
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Narrator
+                        </label>
+                        <Input
+                          value={editValues.narrator}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              narrator: e.target.value,
+                            })
+                          }
+                          placeholder="Narrator name"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleSave(chapter.id)}
+                          disabled={updateChapterMutation.isPending}
+                          style={{ background: "#F7941D", color: "white" }}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          onClick={() => setEditingChapterId(null)}
+                          variant="outline"
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     </div>
-                    {chapter.description && (
-                      <p className="text-gray-700 text-sm mb-3">{chapter.description}</p>
-                    )}
-                    {chapter.narrator && (
-                      <p className="text-gray-600 text-sm mb-3">Narrator: {chapter.narrator}</p>
-                    )}
-                    <div className="flex gap-2 pt-3">
-                      <Button
-                        onClick={() => handleEditClick(chapter.id, chapter.title, chapter.description || '', chapter.narrator || '')}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(chapter.id)}
-                        variant="destructive"
-                        size="sm"
-                        disabled={deleteChapterMutation.isPending}
-                      >
-                        Delete
-                      </Button>
+                  ) : (
+                    <div>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            Chapter {index + 1}: {chapter.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Duration: {chapter.duration}
+                          </p>
+                        </div>
+                      </div>
+                      {chapter.description && (
+                        <p className="text-gray-700 text-sm mb-3">
+                          {chapter.description}
+                        </p>
+                      )}
+                      {chapter.narrator && (
+                        <p className="text-gray-600 text-sm mb-3">
+                          Narrator: {chapter.narrator}
+                        </p>
+                      )}
+                      <div className="flex gap-2 pt-3">
+                        <Button
+                          onClick={() =>
+                            handleEditClick(
+                              chapter.id,
+                              chapter.title,
+                              chapter.description || "",
+                              chapter.narrator || "",
+                            )
+                          }
+                          variant="outline"
+                          size="sm"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(chapter.id)}
+                          variant="destructive"
+                          size="sm"
+                          disabled={deleteChapterMutation.isPending}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </SortableChapterRow>
-            ))}
-          </div>
-        )}
-      </div>
+                  )}
+                </SortableChapterRow>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </DndProvider>
   );

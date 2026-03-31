@@ -1,1 +1,1 @@
-export type DashboardTabType = 'content' | 'upload' | 'analytics' | 'profile';
+export type DashboardTabType = "content" | "upload" | "analytics" | "profile";

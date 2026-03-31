@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, use, useMemo, useEffect, type ReactNode } from 'react';
-import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { orpc } from '@/src/server/orpc/client';
-import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
-import { Textarea } from '@/src/components/ui/textarea';
-import { toast } from 'sonner';
+import { useState, use, useMemo, useEffect, type ReactNode } from "react";
+import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { orpc } from "@/src/server/orpc/client";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { Textarea } from "@/src/components/ui/textarea";
+import { toast } from "sonner";
 
 type PageParams = { id: string };
 
@@ -40,7 +40,7 @@ function SortableEpisodeRow({
   children: ReactNode;
 }) {
   const [, drop] = useDrop<DragEpisodeItem>({
-    accept: 'EPISODE',
+    accept: "EPISODE",
     hover(item) {
       if (item.index === index) return;
       moveEpisode(item.index, index);
@@ -48,35 +48,48 @@ function SortableEpisodeRow({
     },
   });
 
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'EPISODE',
-    item: { id: episode.id, index },
-    end: () => onDragEnd(),
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: "EPISODE",
+      item: { id: episode.id, index },
+      end: () => onDragEnd(),
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
     }),
-  }), [episode.id, index, onDragEnd]);
+    [episode.id, index, onDragEnd],
+  );
 
   const setNodeRef = (node: HTMLDivElement | null) => {
     drag(drop(node));
   };
 
   return (
-    <div ref={setNodeRef} className="px-6 py-4 cursor-move" style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <div
+      ref={setNodeRef}
+      className="px-6 py-4 cursor-move"
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+    >
       {children}
     </div>
   );
 }
 
-export default function EditPodcastEpisodes({ params }: { params: Promise<PageParams> }) {
+export default function EditPodcastEpisodes({
+  params,
+}: {
+  params: Promise<PageParams>;
+}) {
   const { id } = use(params);
-  
+
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
-  const podcast = data?.content?.type === 'podcast' ? data.content : null;
-  
+  const { data, isLoading } = useQuery(
+    orpc.content.detail.queryOptions({ input: { id } }),
+  );
+  const podcast = data?.content?.type === "podcast" ? data.content : null;
+
   const [editingEpisodeId, setEditingEpisodeId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ title: '', description: '' });
+  const [editValues, setEditValues] = useState({ title: "", description: "" });
 
   const episodes = useMemo(() => {
     if (!podcast?.episodes) return [];
@@ -92,12 +105,14 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
   const updateEpisodeMutation = useMutation(
     orpc.content.updateEpisode.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
         setEditingEpisodeId(null);
-        toast.success('Episode updated');
+        toast.success("Episode updated");
       },
       onError: () => {
-        toast.error('Failed to update episode');
+        toast.error("Failed to update episode");
       },
     }),
   );
@@ -105,11 +120,13 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
   const deleteEpisodeMutation = useMutation(
     orpc.content.deleteEpisode.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
-        toast.success('Episode deleted');
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
+        toast.success("Episode deleted");
       },
       onError: () => {
-        toast.error('Failed to delete episode');
+        toast.error("Failed to delete episode");
       },
     }),
   );
@@ -117,12 +134,16 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
   const reorderEpisodesMutation = useMutation(
     orpc.content.reorderEpisodes.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
-        toast.success('Episode order updated');
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
+        toast.success("Episode order updated");
       },
       onError: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
-        toast.error('Failed to reorder episodes');
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.detail.queryKey({ input: { id } }),
+        });
+        toast.error("Failed to reorder episodes");
       },
     }),
   );
@@ -141,7 +162,9 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
 
     const episodeIds = localEpisodes.map((episode) => episode.id);
     const currentIds = episodes.map((episode) => episode.id);
-    const changed = episodeIds.some((episodeId, index) => episodeId !== currentIds[index]);
+    const changed = episodeIds.some(
+      (episodeId, index) => episodeId !== currentIds[index],
+    );
 
     if (!changed) return;
 
@@ -151,7 +174,11 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
     });
   };
 
-  const handleEditClick = (episodeId: string, title: string, description: string) => {
+  const handleEditClick = (
+    episodeId: string,
+    title: string,
+    description: string,
+  ) => {
     setEditingEpisodeId(episodeId);
     setEditValues({ title, description });
   };
@@ -165,20 +192,22 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
   };
 
   const handleDelete = async (episodeId: string) => {
-    const confirmed = window.confirm('Are you sure you want to delete this episode? This action cannot be undone.');
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this episode? This action cannot be undone.",
+    );
     if (!confirmed) return;
-    
+
     await deleteEpisodeMutation.mutateAsync({
       episodeId,
     });
   };
 
   const formatDate = (date: string | null) => {
-    if (!date) return '-';
+    if (!date) return "-";
     return new Date(date).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -209,123 +238,158 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <Link href="/dashboard" className="text-blue-600 hover:underline text-sm mb-4 inline-block">
-          ← Back to Dashboard
-        </Link>
-        <div className="flex items-center gap-4 mb-6">
-          <img
-            src={podcast.cover}
-            alt={podcast.title}
-            className="w-24 h-24 rounded-lg object-cover"
-          />
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{podcast.title}</h1>
-            <p className="text-gray-600">{podcast.author}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Episodes ({localEpisodes.length})</h2>
-          <Link href={`/dashboard?tab=upload&podcastId=${id}`} className="text-blue-600 hover:underline text-sm">
-            + Add Episode
+        <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="text-blue-600 hover:underline text-sm mb-4 inline-block"
+          >
+            ← Back to Dashboard
           </Link>
+          <div className="flex items-center gap-4 mb-6">
+            <img
+              src={podcast.cover}
+              alt={podcast.title}
+              className="w-24 h-24 rounded-lg object-cover"
+            />
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{podcast.title}</h1>
+              <p className="text-gray-600">{podcast.author}</p>
+            </div>
+          </div>
         </div>
 
-        {localEpisodes.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-500">
-            No episodes yet. <Link href={`/dashboard?tab=upload&podcastId=${id}`} className="text-blue-600 hover:underline">Add one now</Link>
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-bold">
+              Episodes ({localEpisodes.length})
+            </h2>
+            <Link
+              href={`/dashboard?tab=upload&podcastId=${id}`}
+              className="text-blue-600 hover:underline text-sm"
+            >
+              + Add Episode
+            </Link>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {localEpisodes.map((episode, index) => (
-              <SortableEpisodeRow
-                key={episode.id}
-                episode={episode}
-                index={index}
-                moveEpisode={moveEpisode}
-                onDragEnd={() => {
-                  void persistEpisodeOrder();
-                }}
+
+          {localEpisodes.length === 0 ? (
+            <div className="px-6 py-12 text-center text-gray-500">
+              No episodes yet.{" "}
+              <Link
+                href={`/dashboard?tab=upload&podcastId=${id}`}
+                className="text-blue-600 hover:underline"
               >
-                {editingEpisodeId === episode.id ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Episode Title
-                      </label>
-                      <Input
-                        value={editValues.title}
-                        onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
-                        placeholder="Episode name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                      </label>
-                      <Textarea
-                        value={editValues.description}
-                        onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
-                        placeholder="Episode description"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleSave(episode.id)}
-                        disabled={updateEpisodeMutation.isPending}
-                        style={{ background: '#F7941D', color: 'white' }}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        onClick={() => setEditingEpisodeId(null)}
-                        variant="outline"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{episode.title}</h3>
-                        <p className="text-sm text-gray-500">
-                          {formatDate(episode.date)} • Duration: {episode.duration}
-                        </p>
+                Add one now
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {localEpisodes.map((episode, index) => (
+                <SortableEpisodeRow
+                  key={episode.id}
+                  episode={episode}
+                  index={index}
+                  moveEpisode={moveEpisode}
+                  onDragEnd={() => {
+                    void persistEpisodeOrder();
+                  }}
+                >
+                  {editingEpisodeId === episode.id ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Episode Title
+                        </label>
+                        <Input
+                          value={editValues.title}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              title: e.target.value,
+                            })
+                          }
+                          placeholder="Episode name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <Textarea
+                          value={editValues.description}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="Episode description"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleSave(episode.id)}
+                          disabled={updateEpisodeMutation.isPending}
+                          style={{ background: "#F7941D", color: "white" }}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          onClick={() => setEditingEpisodeId(null)}
+                          variant="outline"
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     </div>
-                    {episode.description && (
-                      <p className="text-gray-700 text-sm mb-3">{episode.description}</p>
-                    )}
-                    <div className="flex gap-2 pt-3">
-                      <Button
-                        onClick={() => handleEditClick(episode.id, episode.title, episode.description || '')}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(episode.id)}
-                        variant="destructive"
-                        size="sm"
-                        disabled={deleteEpisodeMutation.isPending}
-                      >
-                        Delete
-                      </Button>
+                  ) : (
+                    <div>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg">
+                            {episode.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {formatDate(episode.date)} • Duration:{" "}
+                            {episode.duration}
+                          </p>
+                        </div>
+                      </div>
+                      {episode.description && (
+                        <p className="text-gray-700 text-sm mb-3">
+                          {episode.description}
+                        </p>
+                      )}
+                      <div className="flex gap-2 pt-3">
+                        <Button
+                          onClick={() =>
+                            handleEditClick(
+                              episode.id,
+                              episode.title,
+                              episode.description || "",
+                            )
+                          }
+                          variant="outline"
+                          size="sm"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(episode.id)}
+                          variant="destructive"
+                          size="sm"
+                          disabled={deleteEpisodeMutation.isPending}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </SortableEpisodeRow>
-            ))}
-          </div>
-        )}
-      </div>
+                  )}
+                </SortableEpisodeRow>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </DndProvider>
   );
