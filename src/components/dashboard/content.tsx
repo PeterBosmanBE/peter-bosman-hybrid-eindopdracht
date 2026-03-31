@@ -162,7 +162,7 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
                 <th className="text-left px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#666666' }}>Title</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Type</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Author</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Duration</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Language</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Release date</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#666666' }}>Actions</th>
               </tr>
@@ -221,7 +221,7 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
                                   <span style={{ color: '#232F3E' }}>{item.author}</span>
                                 </td>
                                 <td className="px-6 py-4 hidden md:table-cell">
-                                  <span style={{ color: '#232F3E' }}>{item.duration}</span>
+                                  <span style={{ color: '#232F3E' }}>{item.language || '-'}</span>
                                 </td>
                                 <td className="px-6 py-4 hidden md:table-cell">
                                   <span style={{ color: '#232F3E' }}>{formatReleaseDate(item.releaseDate)}</span>
