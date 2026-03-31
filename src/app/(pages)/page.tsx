@@ -14,7 +14,7 @@ export default async function Home() {
   const audioList = await db.select().from(audiobooks).limit(20);
   const podcastList = await db.select().from(podcastsTable).limit(20);
   
-  const featuredContent = await getRandomItems(audioList, 4);
+  const randomAudiobooks = await getRandomItems(audioList, 4);
   const podcastsData = await getRandomItems(podcastList, 4);
   
   const session = await authClient.getSession();
@@ -88,7 +88,7 @@ export default async function Home() {
             </div>
             <div className="relative flex items-center justify-center">
               <div className="grid grid-cols-2 gap-4">
-                {featuredContent.slice(0, 4).map((item, index) => (
+                {randomAudiobooks.map((item, index) => (
                   <Link
                     key={item.id}
                     href={`/audiobook/${item.id}`}
@@ -116,13 +116,13 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Featured Audiobooks */}
+      {/* Random Audiobooks */}
       <section className="px-6 py-10 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2
             className="font-serif text-2xl font-bold text-[#232F3E]"
           >
-            Featured Audiobooks
+            Random Audiobooks
           </h2>
           <Link
             href="/search?type=audiobook"
@@ -133,7 +133,7 @@ export default async function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {featuredContent.map((item) => (
+          {randomAudiobooks.map((item) => (
             <Link
               key={item.id}
               href={`/audiobook/${item.id}`}
@@ -181,13 +181,13 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Podcasts */}
+      {/* Random Podcasts */}
       <section className="px-6 py-10 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2
             className="font-serif text-2xl font-bold text-[#232F3E]"
           >
-            Popular Podcasts
+            Random Podcasts
           </h2>
           <Link
             href="/search?type=podcast"

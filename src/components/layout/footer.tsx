@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <>
       {/* Footer */}
-      <footer className="px-6 py-16 mt-10" style={{ background: "#232F3E" }}>
+      <footer className="px-6 py-16 mt-10 bg-[#232F3E]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-10 mb-12">
             <div>
@@ -34,7 +34,7 @@ export default function Footer() {
               <ul className="space-y-2">
                 <li>
                   <Link
-                    href="/home"
+                    href="/search?type=audiobook"
                     className="text-sm transition-colors hover:text-white"
                     style={{ color: "rgba(255,255,255,0.5)" }}
                   >
@@ -43,20 +43,11 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
-                    href="/home"
+                    href="/search?type=podcast"
                     className="text-sm transition-colors hover:text-white"
                     style={{ color: "rgba(255,255,255,0.5)" }}
                   >
                     Podcasts
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/home"
-                    className="text-sm transition-colors hover:text-white"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Categories
                   </Link>
                 </li>
               </ul>
@@ -73,48 +64,9 @@ export default function Footer() {
                     Dashboard
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/home"
-                    className="text-sm transition-colors hover:text-white"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Settings
-                  </Link>
-                </li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Support</h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/home"
-                    className="text-sm transition-colors hover:text-white"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/home"
-                    className="text-sm transition-colors hover:text-white"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/home"
-                    className="text-sm transition-colors hover:text-white"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Privacy
-                  </Link>
-                </li>
-              </ul>
             </div>
           </div>
           <div
