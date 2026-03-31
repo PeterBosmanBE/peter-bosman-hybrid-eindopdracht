@@ -1,6 +1,6 @@
 import { os } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 import * as z from "zod";
 import { db } from "@/src/server/db/client";
@@ -202,17 +202,20 @@ export const contentRouter = {
     const id = crypto.randomUUID();
     const chapterDuration = input.duration?.trim() || "00:00";
 
-    const existingChapters = await db
-      .select({ id: audiobookChapters.id })
+    const latestChapter = await db
+      .select({ sortOrder: audiobookChapters.sortOrder })
       .from(audiobookChapters)
-      .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+      .where(eq(audiobookChapters.audiobookId, input.audiobookId))
+      .orderBy(desc(audiobookChapters.sortOrder))
+      .limit(1);
 
-    const nextChapterNumber = existingChapters.length + 1;
+    const nextChapterNumber = (latestChapter[0]?.sortOrder ?? 0) + 1;
     const chapterTitle = input.title?.trim() || `Chapter ${nextChapterNumber}`;
 
     await db.insert(audiobookChapters).values({
       id,
       audiobookId: input.audiobookId,
+      sortOrder: nextChapterNumber,
       title: chapterTitle,
       duration: chapterDuration,
       audio: input.audio || "",
@@ -249,9 +252,19 @@ export const contentRouter = {
     const id = crypto.randomUUID();
     const episodeDuration = input.duration?.trim() || "00:00";
 
+    const latestEpisode = await db
+      .select({ sortOrder: podcastEpisodes.sortOrder })
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.podcastId, input.podcastId))
+      .orderBy(desc(podcastEpisodes.sortOrder))
+      .limit(1);
+
+    const nextEpisodeNumber = (latestEpisode[0]?.sortOrder ?? 0) + 1;
+
     await db.insert(podcastEpisodes).values({
       id,
       podcastId: input.podcastId,
+      sortOrder: nextEpisodeNumber,
       title: input.title,
       duration: episodeDuration,
       audio: input.audio || "",
@@ -380,6 +393,7 @@ export const contentRouter = {
       const chapters = await db
         .select({
           id: audiobookChapters.id,
+          sortOrder: audiobookChapters.sortOrder,
           title: audiobookChapters.title,
           duration: audiobookChapters.duration,
           audio: audiobookChapters.audio,
@@ -388,7 +402,7 @@ export const contentRouter = {
         })
         .from(audiobookChapters)
         .where(eq(audiobookChapters.audiobookId, input.id))
-        .orderBy(asc(audiobookChapters.title));
+        .orderBy(asc(audiobookChapters.sortOrder));
 
       const related = await db
         .select({
@@ -436,6 +450,7 @@ export const contentRouter = {
       const episodes = await db
         .select({
           id: podcastEpisodes.id,
+          sortOrder: podcastEpisodes.sortOrder,
           title: podcastEpisodes.title,
           duration: podcastEpisodes.duration,
           audio: podcastEpisodes.audio,
@@ -444,7 +459,7 @@ export const contentRouter = {
         })
         .from(podcastEpisodes)
         .where(eq(podcastEpisodes.podcastId, input.id))
-        .orderBy(asc(podcastEpisodes.date));
+        .orderBy(asc(podcastEpisodes.sortOrder));
 
       const related = await db
         .select({
@@ -592,6 +607,19 @@ export const contentRouter = {
     await db.delete(bookmarks).where(eq(bookmarks.contentId, input.chapterId));
     await db.delete(audiobookChapters).where(eq(audiobookChapters.id, input.chapterId));
 
+    const reorderedChapters = await db
+      .select({ id: audiobookChapters.id })
+      .from(audiobookChapters)
+      .where(eq(audiobookChapters.audiobookId, chapter[0].audiobookId))
+      .orderBy(asc(audiobookChapters.sortOrder));
+
+    for (const [index, ch] of reorderedChapters.entries()) {
+      await db
+        .update(audiobookChapters)
+        .set({ sortOrder: index + 1 })
+        .where(eq(audiobookChapters.id, ch.id));
+    }
+
     const remainingChapters = await db
       .select({ duration: audiobookChapters.duration })
       .from(audiobookChapters)
@@ -648,6 +676,69 @@ export const contentRouter = {
     await db.delete(bookmarks).where(eq(bookmarks.contentId, input.episodeId));
     await db.delete(podcastEpisodes).where(eq(podcastEpisodes.id, input.episodeId));
 
+    const reorderedEpisodes = await db
+      .select({ id: podcastEpisodes.id })
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.podcastId, episode[0].podcastId))
+      .orderBy(asc(podcastEpisodes.sortOrder));
+
+    for (const [index, ep] of reorderedEpisodes.entries()) {
+      await db
+        .update(podcastEpisodes)
+        .set({ sortOrder: index + 1 })
+        .where(eq(podcastEpisodes.id, ep.id));
+    }
+
     return { id: input.episodeId };
+  }),
+
+  reorderChapters: os.input(z.object({
+    audiobookId: z.string().min(1),
+    chapterIds: z.array(z.string().min(1)).min(1),
+  })).handler(async ({ input }) => {
+    const existing = await db
+      .select({ id: audiobookChapters.id })
+      .from(audiobookChapters)
+      .where(eq(audiobookChapters.audiobookId, input.audiobookId));
+
+    const existingIds = new Set(existing.map((chapter) => chapter.id));
+
+    if (existing.length !== input.chapterIds.length || input.chapterIds.some((id) => !existingIds.has(id))) {
+      throw new ORPCError("BAD_REQUEST");
+    }
+
+    for (const [index, chapterId] of input.chapterIds.entries()) {
+      await db
+        .update(audiobookChapters)
+        .set({ sortOrder: index + 1 })
+        .where(and(eq(audiobookChapters.id, chapterId), eq(audiobookChapters.audiobookId, input.audiobookId)));
+    }
+
+    return { reordered: input.chapterIds.length };
+  }),
+
+  reorderEpisodes: os.input(z.object({
+    podcastId: z.string().min(1),
+    episodeIds: z.array(z.string().min(1)).min(1),
+  })).handler(async ({ input }) => {
+    const existing = await db
+      .select({ id: podcastEpisodes.id })
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.podcastId, input.podcastId));
+
+    const existingIds = new Set(existing.map((episode) => episode.id));
+
+    if (existing.length !== input.episodeIds.length || input.episodeIds.some((id) => !existingIds.has(id))) {
+      throw new ORPCError("BAD_REQUEST");
+    }
+
+    for (const [index, episodeId] of input.episodeIds.entries()) {
+      await db
+        .update(podcastEpisodes)
+        .set({ sortOrder: index + 1 })
+        .where(and(eq(podcastEpisodes.id, episodeId), eq(podcastEpisodes.podcastId, input.podcastId)));
+    }
+
+    return { reordered: input.episodeIds.length };
   }),
 };

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, use, useMemo } from 'react';
+import { useState, use, useMemo, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { orpc } from '@/src/server/orpc/client';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -10,6 +12,61 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { toast } from 'sonner';
 
 type PageParams = { id: string };
+
+type EpisodeRow = {
+  id: string;
+  title: string;
+  duration: string;
+  description: string;
+  date: string;
+};
+
+type DragEpisodeItem = {
+  id: string;
+  index: number;
+};
+
+function SortableEpisodeRow({
+  episode,
+  index,
+  moveEpisode,
+  onDragEnd,
+  children,
+}: {
+  episode: EpisodeRow;
+  index: number;
+  moveEpisode: (from: number, to: number) => void;
+  onDragEnd: () => void;
+  children: ReactNode;
+}) {
+  const [, drop] = useDrop<DragEpisodeItem>({
+    accept: 'EPISODE',
+    hover(item) {
+      if (item.index === index) return;
+      moveEpisode(item.index, index);
+      item.index = index;
+    },
+  });
+
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'EPISODE',
+    item: { id: episode.id, index },
+    end: () => onDragEnd(),
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }), [episode.id, index, onDragEnd]);
+
+  const setNodeRef = (node: HTMLDivElement | null) => {
+    drag(drop(node));
+  };
+
+  return (
+    <div ref={setNodeRef} className="px-6 py-4 cursor-move" style={{ opacity: isDragging ? 0.5 : 1 }}>
+      {children}
+    </div>
+  );
+}
 
 export default function EditPodcastEpisodes({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
@@ -23,12 +80,14 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
 
   const episodes = useMemo(() => {
     if (!podcast?.episodes) return [];
-    return [...podcast.episodes].sort((a, b) => {
-      const aDate = a.date ? new Date(a.date).getTime() : 0;
-      const bDate = b.date ? new Date(b.date).getTime() : 0;
-      return bDate - aDate;
-    });
-    }, [podcast]);
+    return [...podcast.episodes] as EpisodeRow[];
+  }, [podcast]);
+
+  const [localEpisodes, setLocalEpisodes] = useState<EpisodeRow[]>([]);
+
+  useEffect(() => {
+    setLocalEpisodes(episodes);
+  }, [episodes]);
 
   const updateEpisodeMutation = useMutation(
     orpc.content.updateEpisode.mutationOptions({
@@ -54,6 +113,43 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
       },
     }),
   );
+
+  const reorderEpisodesMutation = useMutation(
+    orpc.content.reorderEpisodes.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
+        toast.success('Episode order updated');
+      },
+      onError: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
+        toast.error('Failed to reorder episodes');
+      },
+    }),
+  );
+
+  const moveEpisode = (fromIndex: number, toIndex: number) => {
+    setLocalEpisodes((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  };
+
+  const persistEpisodeOrder = async () => {
+    if (!localEpisodes.length) return;
+
+    const episodeIds = localEpisodes.map((episode) => episode.id);
+    const currentIds = episodes.map((episode) => episode.id);
+    const changed = episodeIds.some((episodeId, index) => episodeId !== currentIds[index]);
+
+    if (!changed) return;
+
+    await reorderEpisodesMutation.mutateAsync({
+      podcastId: id,
+      episodeIds,
+    });
+  };
 
   const handleEditClick = (episodeId: string, title: string, description: string) => {
     setEditingEpisodeId(episodeId);
@@ -111,7 +207,8 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <DndProvider backend={HTML5Backend}>
+      <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8">
         <Link href="/dashboard" className="text-blue-600 hover:underline text-sm mb-4 inline-block">
           ← Back to Dashboard
@@ -131,20 +228,28 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
 
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Episodes ({episodes.length})</h2>
+          <h2 className="text-lg font-bold">Episodes ({localEpisodes.length})</h2>
           <Link href={`/dashboard/upload?podcast=${id}`} className="text-blue-600 hover:underline text-sm">
             + Add Episode
           </Link>
         </div>
 
-        {episodes.length === 0 ? (
+        {localEpisodes.length === 0 ? (
           <div className="px-6 py-12 text-center text-gray-500">
             No episodes yet. <Link href={`/dashboard/upload?podcast=${id}`} className="text-blue-600 hover:underline">Add one now</Link>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {episodes.map((episode) => (
-              <div key={episode.id} className="px-6 py-4">
+            {localEpisodes.map((episode, index) => (
+              <SortableEpisodeRow
+                key={episode.id}
+                episode={episode}
+                index={index}
+                moveEpisode={moveEpisode}
+                onDragEnd={() => {
+                  void persistEpisodeOrder();
+                }}
+              >
                 {editingEpisodeId === episode.id ? (
                   <div className="space-y-4">
                     <div>
@@ -216,11 +321,12 @@ export default function EditPodcastEpisodes({ params }: { params: Promise<PagePa
                     </div>
                   </div>
                 )}
-              </div>
+              </SortableEpisodeRow>
             ))}
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </DndProvider>
   );
 }

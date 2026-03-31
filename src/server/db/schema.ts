@@ -133,6 +133,7 @@ export const audiobookChapters = pgTable(
   {
     id: text("id").primaryKey(),
     audiobookId: text("audiobook_id").references(() => audiobooks.id).notNull(),
+    sortOrder: integer("sort_order").notNull().default(1),
     title: text("title").notNull(),
     duration: text("duration").notNull(),
     audio: text("audio").notNull(),
@@ -171,6 +172,7 @@ export const podcastEpisodes = pgTable(
   {
     id: text("id").primaryKey(),
     podcastId: text("podcast_id").references(() => podcasts.id).notNull(),
+    sortOrder: integer("sort_order").notNull().default(1),
     title: text("title").notNull(),
     duration: text("duration").notNull(),
     audio: text("audio").notNull(),

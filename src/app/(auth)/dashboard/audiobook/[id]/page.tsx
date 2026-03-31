@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { orpc } from '@/src/server/orpc/client';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -10,6 +12,61 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { toast } from 'sonner';
 
 type PageParams = { id: string };
+
+type ChapterRow = {
+  id: string;
+  title: string;
+  duration: string;
+  description: string;
+  narrator: string | null;
+};
+
+type DragChapterItem = {
+  id: string;
+  index: number;
+};
+
+function SortableChapterRow({
+  chapter,
+  index,
+  moveChapter,
+  onDragEnd,
+  children,
+}: {
+  chapter: ChapterRow;
+  index: number;
+  moveChapter: (from: number, to: number) => void;
+  onDragEnd: () => void;
+  children: ReactNode;
+}) {
+  const [, drop] = useDrop<DragChapterItem>({
+    accept: 'CHAPTER',
+    hover(item) {
+      if (item.index === index) return;
+      moveChapter(item.index, index);
+      item.index = index;
+    },
+  });
+
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'CHAPTER',
+    item: { id: chapter.id, index },
+    end: () => onDragEnd(),
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }), [chapter.id, index, onDragEnd]);
+
+  const setNodeRef = (node: HTMLDivElement | null) => {
+    drag(drop(node));
+  };
+
+  return (
+    <div ref={setNodeRef} className="px-6 py-4 cursor-move" style={{ opacity: isDragging ? 0.5 : 1 }}>
+      {children}
+    </div>
+  );
+}
 
 export default function EditAudiobookChapters({ params }: { params: Promise<PageParams> }) {
   const { id } = use(params);
@@ -21,7 +78,12 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ title: '', description: '', narrator: '' });
 
-  const chapters = audiobook?.chapters || [];
+  const chapters = (audiobook?.chapters || []) as ChapterRow[];
+  const [localChapters, setLocalChapters] = useState<ChapterRow[]>([]);
+
+  useEffect(() => {
+    setLocalChapters(chapters);
+  }, [chapters]);
 
   const updateChapterMutation = useMutation(
     orpc.content.updateChapter.mutationOptions({
@@ -47,6 +109,43 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
       },
     }),
   );
+
+  const reorderChaptersMutation = useMutation(
+    orpc.content.reorderChapters.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
+        toast.success('Chapter order updated');
+      },
+      onError: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.content.detail.queryKey({ input: { id } }) });
+        toast.error('Failed to reorder chapters');
+      },
+    }),
+  );
+
+  const moveChapter = (fromIndex: number, toIndex: number) => {
+    setLocalChapters((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  };
+
+  const persistChapterOrder = async () => {
+    if (!localChapters.length) return;
+
+    const chapterIds = localChapters.map((chapter) => chapter.id);
+    const currentIds = chapters.map((chapter) => chapter.id);
+    const changed = chapterIds.some((chapterId, index) => chapterId !== currentIds[index]);
+
+    if (!changed) return;
+
+    await reorderChaptersMutation.mutateAsync({
+      audiobookId: id,
+      chapterIds,
+    });
+  };
 
   const handleEditClick = (chapterId: string, title: string, description: string, narrator: string) => {
     setEditingChapterId(chapterId);
@@ -96,7 +195,8 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <DndProvider backend={HTML5Backend}>
+      <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8">
         <Link href="/dashboard" className="text-blue-600 hover:underline text-sm mb-4 inline-block">
           ← Back to Dashboard
@@ -117,20 +217,28 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
 
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Chapters ({chapters.length})</h2>
+          <h2 className="text-lg font-bold">Chapters ({localChapters.length})</h2>
           <Link href={`/dashboard/upload?audiobook=${id}`} className="text-blue-600 hover:underline text-sm">
             + Add Chapter
           </Link>
         </div>
 
-        {chapters.length === 0 ? (
+        {localChapters.length === 0 ? (
           <div className="px-6 py-12 text-center text-gray-500">
             No chapters yet. <Link href={`/dashboard/upload?audiobook=${id}`} className="text-blue-600 hover:underline">Add one now</Link>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {chapters.map((chapter, index) => (
-              <div key={chapter.id} className="px-6 py-4">
+            {localChapters.map((chapter, index) => (
+              <SortableChapterRow
+                key={chapter.id}
+                chapter={chapter}
+                index={index}
+                moveChapter={moveChapter}
+                onDragEnd={() => {
+                  void persistChapterOrder();
+                }}
+              >
                 {editingChapterId === chapter.id ? (
                   <div className="space-y-4">
                     <div>
@@ -213,11 +321,12 @@ export default function EditAudiobookChapters({ params }: { params: Promise<Page
                     </div>
                   </div>
                 )}
-              </div>
+              </SortableChapterRow>
             ))}
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </DndProvider>
   );
 }
