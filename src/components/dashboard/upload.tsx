@@ -189,7 +189,10 @@ export default function Upload() {
         setFileDuration(finalDuration);
 
         toast.info("Uploading audio...");
-        const newBlob = await upload(data.file.name, data.file, {
+        const safeFileName = data.file.name.replace(/\s+/g, "-");
+        const uploadFileName = `up-${Date.now().toString(36)}-${safeFileName}`;
+
+        const newBlob = await upload(uploadFileName, data.file, {
           access: "public",
           handleUploadUrl: "/api/client-upload",
           onUploadProgress: (progressEvent) => {
