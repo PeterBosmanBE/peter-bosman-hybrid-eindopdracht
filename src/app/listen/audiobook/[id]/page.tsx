@@ -15,10 +15,9 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
   
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
-  const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "audiobook" } }));
   const content = data?.content;
   const audiobookChapters = content?.type === 'audiobook' ? content.chapters : [];
-
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,6 +29,12 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
   const [currentChapter, setCurrentChapter] = useState(0);
   const [localBookmarks, setLocalBookmarks] = useState<number[]>([]);
   const [isReady, setIsReady] = useState(false);
+
+  const currentChapterId = audiobookChapters[currentChapter]?.id || '';
+  const { data: dbBookmarks } = useQuery({
+    ...orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: currentChapterId, contentType: "audiobook" } }),
+    enabled: !!currentChapterId
+  });
 
   const audioUrl = audiobookChapters[currentChapter]?.audio;
 
@@ -137,19 +142,21 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
     orpc.bookmarks.addBookmark.mutationOptions({
       onSuccess: () => {
         // Refetch bookmarks after a new one is added
-        queryClient.invalidateQueries({
-          queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: id, contentType: "audiobook" } })
-        });
+        if (currentChapterId) {
+          queryClient.invalidateQueries({
+            queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: currentChapterId, contentType: "audiobook" } })
+          });
+        }
       }
     })
   );
 
   const addBookmark = () => {
     const current = Math.floor(currentTime);
-    if (!bookmarks.includes(current)) {
+    if (!bookmarks.includes(current) && currentChapterId) {
       setLocalBookmarks(prev => [...prev, current]);
       addBookmarkMutation.mutate({
-        contentId: id,
+        contentId: currentChapterId,
         contentType: "audiobook",
         positionSeconds: current,
         title: `Bookmark at ${formatTime(currentTime)}`

@@ -24,7 +24,6 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
   
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(orpc.content.detail.queryOptions({ input: { id } }));
-  const { data: dbBookmarks } = useQuery(orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: id, contentType: "podcast" } }));
   const content = data?.content;
   const isPodcast = content?.type === 'podcast';
   const podcastEpisodes = useMemo(() => {
@@ -58,6 +57,11 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
   }, [podcastEpisodes, selectedEpisodeId]);
 
   const episode = currentEpisodeIndex >= 0 ? podcastEpisodes[currentEpisodeIndex] : undefined;
+  const currentEpisodeId = episode?.id || '';
+  const { data: dbBookmarks } = useQuery({
+    ...orpc.bookmarks.getBookmarks.queryOptions({ input: { contentId: currentEpisodeId, contentType: "podcast" } }),
+    enabled: !!currentEpisodeId
+  });
 
   const bookmarks = Array.from(new Set([
     ...(dbBookmarks?.map(b => b.positionSeconds) || []), 
@@ -171,19 +175,21 @@ export default function ListenPodcast({ params }: { params: Promise<PageParams> 
     orpc.bookmarks.addBookmark.mutationOptions({
       onSuccess: () => {
         // Refetch bookmarks after a new one is added
-        queryClient.invalidateQueries({
-          queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: id, contentType: "podcast" } })
-        });
+        if (currentEpisodeId) {
+          queryClient.invalidateQueries({
+            queryKey: orpc.bookmarks.getBookmarks.key({ input: { contentId: currentEpisodeId, contentType: "podcast" } })
+          });
+        }
       }
     })
   );
 
   const addBookmark = () => {
     const current = Math.floor(currentTime);
-    if (!bookmarks.includes(current)) {
+    if (!bookmarks.includes(current) && currentEpisodeId) {
       setLocalBookmarks(prev => [...prev, current]);
       addBookmarkMutation.mutate({
-        contentId: id,
+        contentId: currentEpisodeId,
         contentType: "podcast",
         positionSeconds: current,
         title: `Bookmark at ${formatTime(currentTime)}`
