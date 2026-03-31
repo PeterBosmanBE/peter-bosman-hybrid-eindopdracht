@@ -154,6 +154,7 @@ export default function Upload() {
     setData((prev) => ({ ...prev, file }));
     const durationSeconds = await getAudioDurationSeconds(file);
     setFileDuration(formatSecondsToDuration(durationSeconds));
+    setCurrentStep(2); // Automatically go to step 2
   }, []);
 
   const handleFileUpload = useCallback(
@@ -357,33 +358,6 @@ export default function Upload() {
               </div>
             )}
           </div>
-
-          {/* 
-            ============================================
-            YOUR UPLOAD CODE PLACEHOLDER
-            ============================================
-            Replace the simulateUpload() function above with your actual upload logic.
-            You can integrate your existing upload code here.
-            
-            Example:
-            const handleFileUpload = async (file: File) => {
-              // Your upload logic here
-              // Update uploadProgress as the file uploads
-              // Call setUploadProgress(percentage) to update the progress bar
-            }
-            ============================================
-          */}
-
-          {/* Continue Button */}
-          <Button
-            onClick={() => setCurrentStep(2)}
-            disabled={!canProceedToStep2}
-            className="w-full uppercase tracking-wide font-semibold"
-            size="lg"
-          >
-            Continue to Details
-            <Icons.chevronRight className="w-4 h-4 ml-2" />
-          </Button>
         </div>
       )}
 
