@@ -6,9 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/src/server/auth/auth-client";
 import { orpc } from "@/src/server/orpc/client";
-import {
-  Dialog,
-} from "@/src/components/ui/dialog";
+import { Dialog } from "@/src/components/ui/dialog";
 import { FilterType } from "@/src/types/FilterType";
 import { DashboardTabType } from "@/src/types/DashboardTabType";
 import CreateShow from "../create-show";
@@ -41,15 +39,19 @@ type DashboardItem = {
   releaseDate: string | null;
 };
 
-
-export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (tab: DashboardTabType) => void }) {
+export default function Content({
+  onTabChange: _onTabChange,
+}: {
+  onTabChange?: (tab: DashboardTabType) => void;
+}) {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [editingItem, setEditingItem] = useState<DashboardItem | null>(null);
 
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
+  const { data: session, isPending: isSessionPending } =
+    authClient.useSession();
 
   // Always fetch totals with type: 'all'
   const totalsQuery = useQuery({
@@ -77,7 +79,9 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
   const deleteContentMutation = useMutation(
     orpc.content.delete.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: orpc.content.list.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: orpc.content.list.queryKey(),
+        });
         toast.success("Content deleted");
       },
       onError: () => {
@@ -86,10 +90,12 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
     }),
   );
 
-  const items: DashboardItem[] = (contentQuery.data?.items ?? []).map((item) => ({
-    ...item,
-    duration: item.duration ?? "00:00",
-  }));
+  const items: DashboardItem[] = (contentQuery.data?.items ?? []).map(
+    (item) => ({
+      ...item,
+      duration: item.duration ?? "00:00",
+    }),
+  );
   const totals = totalsQuery.data ?? { all: 0, audiobooks: 0, podcasts: 0 };
 
   function openEditDialog(item: DashboardItem) {
@@ -138,135 +144,214 @@ export default function Content({ onTabChange: _onTabChange }: { onTabChange?: (
 
       <div>
         <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-2">
-                <Button
-                  onClick={() => setActiveFilter("all")}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ background: activeFilter === "all" ? '#232F3E' : '#F5F5F5', color: activeFilter === "all" ? 'white' : '#666666' }}
-                >
-                  All ({totals.all})
-                </Button>
-                <Button
-                  onClick={() => setActiveFilter("audiobook")}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ background: activeFilter === "audiobook" ? '#232F3E' : '#F5F5F5', color: activeFilter === "audiobook" ? 'white' : '#666666' }}
-                >
-                  Audiobooks ({totals.audiobooks})
-                </Button>
-                <Button
-                  onClick={() => setActiveFilter("podcast")}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ background: activeFilter === "podcast" ? '#232F3E' : '#F5F5F5', color: activeFilter === "podcast" ? 'white' : '#666666' }}
-                >
-                  Podcasts ({totals.podcasts})
-                </Button>
+          <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 flex-1">
+              <Button
+                onClick={() => setActiveFilter("all")}
+                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{
+                  background: activeFilter === "all" ? "#232F3E" : "#F5F5F5",
+                  color: activeFilter === "all" ? "white" : "#666666",
+                }}
+              >
+                All ({totals.all})
+              </Button>
+              <Button
+                onClick={() => setActiveFilter("audiobook")}
+                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{
+                  background:
+                    activeFilter === "audiobook" ? "#232F3E" : "#F5F5F5",
+                  color: activeFilter === "audiobook" ? "white" : "#666666",
+                }}
+              >
+                Audiobooks ({totals.audiobooks})
+              </Button>
+              <Button
+                onClick={() => setActiveFilter("podcast")}
+                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{
+                  background:
+                    activeFilter === "podcast" ? "#232F3E" : "#F5F5F5",
+                  color: activeFilter === "podcast" ? "white" : "#666666",
+                }}
+              >
+                Podcasts ({totals.podcasts})
+              </Button>
             </div>
-            <Button 
-                onClick={() => setCreateOpen(true)}
-                className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-                style={{ background: '#F7941D', color: 'white' }}
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="w-full px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors sm:w-auto"
+              style={{ background: "#F7941D", color: "white" }}
             >
-                + New Upload
+              + New Upload
             </Button>
+          </div>
         </div>
-        <div className="rounded-xl overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E8E8E8' }}>
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ background: "#FFFFFF", border: "1px solid #E8E8E8" }}
+        >
           <table className="w-full">
             <thead>
-              <tr style={{ background: '#F9F9F7' }}>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#666666' }}>Title</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Type</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Author</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Language</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell" style={{ color: '#666666' }}>Release date</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase" style={{ color: '#666666' }}>Actions</th>
+              <tr style={{ background: "#F9F9F7" }}>
+                <th
+                  className="text-left px-6 py-4 text-xs font-semibold uppercase"
+                  style={{ color: "#666666" }}
+                >
+                  Title
+                </th>
+                <th
+                  className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell"
+                  style={{ color: "#666666" }}
+                >
+                  Type
+                </th>
+                <th
+                  className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell"
+                  style={{ color: "#666666" }}
+                >
+                  Author
+                </th>
+                <th
+                  className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell"
+                  style={{ color: "#666666" }}
+                >
+                  Language
+                </th>
+                <th
+                  className="text-left px-6 py-4 text-xs font-semibold uppercase hidden md:table-cell"
+                  style={{ color: "#666666" }}
+                >
+                  Release date
+                </th>
+                <th
+                  className="text-left px-6 py-4 text-xs font-semibold uppercase"
+                  style={{ color: "#666666" }}
+                >
+                  Actions
+                </th>
               </tr>
             </thead>
-          <tbody>
-            {contentQuery.isLoading && (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center" style={{ color: '#666666' }}>
-                  Loading your content...
-                </td>
-              </tr>
-            )}
-            {contentQuery.isError && (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center" style={{ color: '#B91C1C' }}>
-                  Could not load your content from the database.
-                </td>
-              </tr>
-            )}
-            {!contentQuery.isLoading && !contentQuery.isError && items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center" style={{ color: '#666666' }}>
-                  No content found in your database yet.
-                </td>
-              </tr>
-            )}
+            <tbody>
+              {contentQuery.isLoading && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center"
+                    style={{ color: "#666666" }}
+                  >
+                    Loading your content...
+                  </td>
+                </tr>
+              )}
+              {contentQuery.isError && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center"
+                    style={{ color: "#B91C1C" }}
+                  >
+                    Could not load your content from the database.
+                  </td>
+                </tr>
+              )}
+              {!contentQuery.isLoading &&
+                !contentQuery.isError &&
+                items.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-8 text-center"
+                      style={{ color: "#666666" }}
+                    >
+                      No content found in your database yet.
+                    </td>
+                  </tr>
+                )}
 
-                            {items.map((item) => (
-                              <tr key={item.id} className="border-t" style={{ borderColor: '#E8E8E8' }}>
-                                <td className="px-6 py-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className="relative w-12 h-12 shrink-0">
-                                      <Image
-                                        src={item.cover}
-                                        alt={item.title}
-                                        fill
-                                        className="w-12 h-12 rounded-lg object-cover"
-                                      />
-                                  </div>
-                                    <div>
-                                      <Link href={`/dashboard/${item.type}/${item.id}`} className="font-semibold hover:text-blue-600 transition-colors">
-                                        {item.title}
-                                      </Link>
-                                      <div className="flex items-center gap-1 md:hidden">
-                                        <span className="text-xs px-2 py-0.5 rounded-full capitalize" style={{ background: '#F5F5F5', color: '#666666' }}>
-                                          {item.type}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 hidden md:table-cell">
-                                  <span className="text-sm capitalize" style={{ color: '#666666' }}>{item.type}</span>
-                                </td>
-                                <td className="px-6 py-4 hidden md:table-cell">
-                                  <span style={{ color: '#232F3E' }}>{item.author}</span>
-                                </td>
-                                <td className="px-6 py-4 hidden md:table-cell">
-                                  <span style={{ color: '#232F3E' }}>{item.language || '-'}</span>
-                                </td>
-                                <td className="px-6 py-4 hidden md:table-cell">
-                                  <span style={{ color: '#232F3E' }}>{formatReleaseDate(item.releaseDate)}</span>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => openEditDialog(item)}
-                                    >
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => handleDelete(item)}
-                                      disabled={isDeleting}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+              {items.map((item) => (
+                <tr
+                  key={item.id}
+                  className="border-t"
+                  style={{ borderColor: "#E8E8E8" }}
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-12 h-12 shrink-0">
+                        <Image
+                          src={item.cover}
+                          alt={item.title}
+                          fill
+                          className="w-12 h-12 rounded-lg object-cover"
+                        />
+                      </div>
+                      <div>
+                        <Link
+                          href={`/dashboard/${item.type}/${item.id}`}
+                          className="font-semibold hover:text-blue-600 transition-colors"
+                        >
+                          {item.title}
+                        </Link>
+                        <div className="flex items-center gap-1 md:hidden">
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full capitalize"
+                            style={{ background: "#F5F5F5", color: "#666666" }}
+                          >
+                            {item.type}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    </>
-    );
+                  </td>
+                  <td className="px-6 py-4 hidden md:table-cell">
+                    <span
+                      className="text-sm capitalize"
+                      style={{ color: "#666666" }}
+                    >
+                      {item.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 hidden md:table-cell">
+                    <span style={{ color: "#232F3E" }}>{item.author}</span>
+                  </td>
+                  <td className="px-6 py-4 hidden md:table-cell">
+                    <span style={{ color: "#232F3E" }}>
+                      {item.language || "-"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 hidden md:table-cell">
+                    <span style={{ color: "#232F3E" }}>
+                      {formatReleaseDate(item.releaseDate)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(item)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(item)}
+                        disabled={isDeleting}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
 }
