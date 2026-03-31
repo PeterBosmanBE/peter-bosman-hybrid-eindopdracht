@@ -177,12 +177,6 @@ export default function ListenAudiobook({ params }: { params: Promise<PageParams
     <div className="min-h-screen flex flex-col" style={{ background: '#121212', fontFamily: "'Source Sans 3', sans-serif" }}>
 
       <nav className="flex items-center justify-between px-6 py-4" style={{ background: '#1A1A1A' }}>
-        <Link href={`/details/${id}`} className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </Link>
         <Logo isMainHeader={false} />
         <button 
           onClick={() => setShowChapters(!showChapters)}
