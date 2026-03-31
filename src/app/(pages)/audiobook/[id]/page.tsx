@@ -246,8 +246,8 @@ export default function Details({ params }: { params: Promise<PageParams> }) {
                   <p className="text-white font-semibold">{content.language}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Category</p>
-                  <p className="text-white font-semibold">{content.category}</p>
+                  <p className="text-xs uppercase mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Tags</p>
+                  <p className="text-white font-semibold">{content.tags}</p>
                 </div>
               </div>
 
